@@ -20,6 +20,12 @@
 # production
 /build
 
+# react
+.DS_*
+logs
+**/*.backup.*
+**/*.back.*
+
 # misc
 .DS_Store
 *.pem
@@ -39,3 +45,30 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# vscode
+/.vscode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# Local History for Visual Studio Code
+.history/
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+.history
+.ionide
+
+# local dev / "sandbox" files
+/**/__sb
+/**/__sb.*
+/**/*.sb
+/**/*.sb.*
+
