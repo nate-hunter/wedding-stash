@@ -1,62 +1,34 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/utils/supabase/server';
 
-export async function signInWithEmail(formData: FormData) {
-  // **************************************************************************
-  console.log('*** /login/actions ( signInWithEmail ) ***');
-  // **************************************************************************
+export async function signInWithMagicLink(formData: FormData) {
   const supabase = await createClient();
-  // **************************************************************************
   const email = formData.get('email') as string;
-  console.log('[ DEV ] => MAGIC LINK `email`:', email);
-  // **************************************************************************
-  const { data, error } = await supabase.auth.signInWithOtp({
+
+  // Basic email validation
+  if (!email || !email.includes('@')) {
+    redirect('/login?error=invalid-email');
+  }
+  const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: 'https://localhost:3000/devo',
+      emailRedirectTo: 'http://localhost:6311/auth/confirm',
     },
   });
-  console.log('[ DEV ] => MAGIC LINK DATA:', data);
-  // **************************************************************************
   if (error) {
-    redirect('/error');
+    // Handle specific error types
+    if (error.message.includes('rate limit')) {
+      redirect('/login?error=rate-limited');
+    } else if (error.message.includes('invalid email')) {
+      redirect('/login?error=invalid-email');
+    } else {
+      redirect('/login?error=unknown');
+    }
   }
-  revalidatePath('/', 'layout');
-  redirect('/devo');
-}
 
-export async function login(formData: FormData) {
-  const supabase = await createClient();
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
-  const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-  };
-  const { error } = await supabase.auth.signInWithPassword(data);
-  if (error) {
-    redirect('/error');
-  }
-  revalidatePath('/', 'layout');
-  redirect('/account');
-}
-
-export async function signup(formData: FormData) {
-  const supabase = await createClient();
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
-  const data = {
-    email: formData.get('email') as string,
-    password: formData.get('password') as string,
-  };
-  const { error } = await supabase.auth.signUp(data);
-  if (error) {
-    redirect('/error');
-  }
-  revalidatePath('/', 'layout');
-  redirect('/account');
+  // Success - redirect to a page that shows the magic link was sent
+  redirect('/login?success=true');
 }
