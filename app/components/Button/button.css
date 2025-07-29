@@ -1,0 +1,222 @@
+/*
+TODO:
+    - Move to `app/styles/components/button.css`?
+    - Move to `app/styles/tokens.css`?
+    - Rename to 'styles.css' and export in index.ts? Then import in `app/styles/components.css`
+
+QUESTION: Will this cause issues each time a button is loaded?
+
+NOTE: Leaving here for development ease, e.g to quick reference / tweak
+*/
+
+.ws-btn {
+  /* ------------------------------ TOKENS ------------------------------ */
+  /* BTN / PADDING */
+  --btn-padding-sm: var(--sp-2) var(--sp-2);
+  --btn-padding-md: var(--sp-1) var(--sp-1);
+  --btn-padding-lg: var(--sp-1) var(--sp0);
+  --btn-padding-xl: var(--sp0) var(--sp1);
+  --btn-padding: var(--btn-padding-md);
+  /* FONT / SIZE */
+  --btn-font-size-xs: var(--font-size-xxs);
+  --btn-font-size-sm: var(--font-size-xs);
+  --btn-font-size-md: var(--font-size-sm);
+  --btn-font-size-lg: var(--font-size-md);
+  --btn-font-size-xl: var(--font-size-lg);
+  --btn-font-size: var(--btn-font-size-md);
+  /* FONT / WEIGHT */
+  --btn-font-weight: var(--font-weight-semi-bold);
+  /* FONT / TEXT TRANSFORM */
+  --btn-text-transform-uppercase: uppercase;
+  --btn-text-transform-lowercase: lowercase;
+  --btn-text-transform-capitalize: capitalize;
+  --btn-text-transform-none: none;
+  /* FONT / LETTER SPACING */
+  --btn-letter-spacing-tight: 0.025em;
+  --btn-letter-spacing-normal: 0.05em;
+  --btn-letter-spacing-wide: 0.1em;
+  /* BTN / SHAPE */
+  --btn-shape: var(--radius-straight);
+  /* BTN / WIDTH */
+  --btn-width-fit: fit-content;
+  --btn-width-full: 100%;
+  --btn-width-auto: auto;
+  --btn-width: var(--btn-width-full);
+
+  /* ------------------------------ MODE / LIGHT --------------------------- */
+  /* COLOR / BACKGROUND */
+  --btn-bg-on-light-normal: var(--color-default-d500);
+  --btn-bg-on-light-normal-hovered: var(--color-default-d700);
+  --btn-bg-on-light-inverted: var(--color-default-d500-op-20);
+  --btn-bg-on-light-inverted-hovered: var(--color-default-d500-op-40);
+  --btn-bg-on-light-transparent: var(--color-default-d500-op-00);
+  --btn-bg-on-light-transparent-hovered: var(--color-default-d500-op-40);
+  --btn-bg-on-light-disabled: var(--color-default-d500-op-20);
+  /* COLOR / FONT */
+  --btn-txt-on-light-normal: var(--color-neutral-0);
+  --btn-txt-on-light-inverted: var(--color-neutral-800);
+  --btn-txt-on-light-transparent: var(--color-neutral-800);
+  --btn-txt-on-light-disabled: var(--color-neutral-800-op-50);
+  /* COLOR / BORDER */
+  --btn-border-on-light-normal: var(--btn-bg-on-light-normal);
+  --btn-border-on-light-inverted: var(--btn-bg-on-light-inverted);
+
+  /* ------------------------------ DEFAULT / INITIAL STYLES --------------- */
+  /* COLOR / BACKGROUND */
+  --btn-bg: var(--btn-bg-on-light-normal);
+  --btn-bg-hovered: var(--btn-bg-on-light-normal-hovered);
+  --btn-bg-inverted: var(--btn-bg-on-light-inverted);
+  --btn-bg-inverted-hovered: var(--btn-bg-on-light-inverted-hovered);
+  --btn-bg-transparent: var(--btn-bg-on-light-transparent);
+  --btn-bg-transparent-hovered: var(--btn-bg-on-light-transparent-hovered);
+  --btn-bg-disabled: var(--btn-bg-on-light-disabled);
+  /* COLOR / FONT */
+  --btn-txt: var(--btn-txt-on-light-normal);
+  --btn-txt-hovered: var(--btn-txt);
+  --btn-txt-inverted: var(--btn-txt-on-light-inverted);
+  --btn-txt-transparent: var(--btn-txt-on-light-transparent);
+  --btn-txt-disabled: var(--btn-txt-on-light-disabled);
+  /* COLOR / BORDER */
+  --btn-border-transparent: transparent;
+  --btn-border-normal: var(--color-default-d500);
+  --btn-border-color: var(--btn-border-transparent);
+}
+
+/*****************************************************************************************
+* VARIANTS *
+*****************************************************************************************/
+
+/*  ------------ SUNSET ------------  */
+/*  ------------ PRIMARY ------------  */
+.ws-btn__sunset,
+.ws-btn__primary {
+  /* COLOR / BACKGROUND  */
+  --btn-bg: var(--color-sunset-gold);
+  --btn-bg-hovered: var(--color-sunset-gold-200);
+  --btn-bg-inverted: var(--color-sunset-gold-op-30);
+  --btn-bg-inverted-hovered: var(--color-sunset-gold-op-50);
+  --btn-bg-transparent-hovered: var(--btn-bg-inverted-hovered);
+  /* COLOR / FONT  */
+  --btn-txt: var(--color-ocean-midnight);
+  --btn-txt-hovered: var(--btn-txt);
+  --btn-txt-inverted: var(--btn-txt);
+  --btn-txt-transparent: var(--color-sunset-gold-800);
+  --btn-txt-transparent-hovered: var(--color-sunset-gold-800);
+  /* COLOR / BORDER  */
+  --btn-border-normal: var(--color-sunset-gold);
+}
+
+/*****************************************************************************************
+* BACKGROUND *
+*****************************************************************************************/
+/* ------------------------------ BG INVERTED ------------------------------ */
+.ws-btn__inverted {
+  /* COLOR / BACKGROUND  */
+  --btn-bg: var(--btn-bg-inverted);
+  --btn-bg-hovered: var(--btn-bg-inverted-hovered);
+  /* COLOR / FONT  */
+  --btn-txt: var(--btn-txt-inverted);
+  --btn-txt-hovered: var(--btn-txt);
+  /* COLOR / BORDER  */
+  --btn-border-normal: var(--btn-bg-inverted);
+}
+
+/* ------------------------------ BG TRANSPARENT ---------------------------- */
+
+.ws-btn__transparent {
+  /* COLOR / BACKGROUND  */
+  --btn-bg: var(--btn-bg-transparent);
+  --btn-bg-hovered: var(--btn-bg-transparent-hovered);
+  /* COLOR / FONT  */
+  --btn-txt: var(--btn-txt-transparent);
+  --btn-txt-hovered: var(--btn-txt-transparent-hovered);
+}
+
+/*****************************************************************************************
+* SIZE *
+*****************************************************************************************/
+.ws-btn__xs {
+  --btn-font-size: var(--btn-font-size-xs);
+  --btn-padding: var(--btn-padding-sm);
+  --btn-font-weight: var(--font-weight-bold);
+}
+
+.ws-btn__sm {
+  --btn-font-size: var(--btn-font-size-sm);
+  --btn-padding: var(--btn-padding-sm);
+}
+
+.ws-btn__md {
+  --btn-font-size: var(--btn-font-size-md);
+  --btn-padding: var(--btn-padding-md);
+}
+
+.ws-btn__lg {
+  --btn-font-size: var(--btn-font-size-lg);
+  --btn-padding: var(--btn-padding-lg);
+}
+
+.ws-btn__xl {
+  --btn-font-size: var(--btn-font-size-xl);
+  --btn-padding: var(--btn-padding-xl);
+}
+
+/*****************************************************************************************
+* WIDTH *
+*****************************************************************************************/
+.ws-btn__fit {
+  --btn-width: var(--btn-width-fit);
+}
+
+.ws-btn__full {
+  --btn-width: var(--btn-width-full);
+}
+
+.ws-btn__auto {
+  --btn-width: var(--btn-width-auto);
+}
+
+/*****************************************************************************************
+* IS BORDERED *
+*****************************************************************************************/
+.ws-btn__isBordered {
+  --btn-border-color: var(--btn-border-normal);
+}
+
+/*****************************************************************************************
+* LIGHT MODE - BASE / DEFAULT / INITIAL STYLES *
+*****************************************************************************************/
+.ws-btn {
+  width: var(--btn-width);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  column-gap: var(--sp-2);
+  padding: var(--btn-padding);
+  border-radius: var(--btn-shape);
+  border: 1px solid var(--btn-border-color);
+  background-color: var(--btn-bg);
+  color: var(--btn-txt);
+  font-size: var(--btn-font-size);
+  font-weight: var(--btn-font-weight);
+  font-family: var(--font-inter);
+  text-transform: var(--btn-text-transform-none);
+  letter-spacing: var(--btn-letter-spacing-tight);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.ws-btn:hover:not(:disabled) {
+  background-color: var(--btn-bg-hovered);
+  color: var(--btn-txt-hovered);
+}
+
+/* .ws-btn:focus {
+  outline: 3px solid var(--color-info-500);
+} */
+
+.ws-btn:disabled {
+  background-color: var(--btn-bg-disabled);
+  color: var(--btn-txt-disabled);
+}

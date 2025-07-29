@@ -1,0 +1,111 @@
+/* ------------------------------ Navigation - Swiss Design ------------------------------ */
+.nav-bar {
+  height: 64px;
+  top: 0;
+  position: sticky;
+  display: flex-inline;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--surface-color-light);
+  border-bottom: 1px solid var(--border-color-app);
+  backdrop-filter: blur(8px);
+  z-index: 50;
+}
+
+.nav-container {
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+}
+
+.nav-brand {
+  font-family: var(--font-playfair);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-ocean-midnight);
+  text-decoration: none;
+  letter-spacing: -0.025em;
+  transition: color 0.2s ease;
+}
+
+.nav-brand:hover {
+  color: var(--color-sunset-gold-500);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.nav-link {
+  font-family: var(--font-inter);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-ocean-midnight);
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+  position: relative;
+  transform: translateY(3px);
+}
+
+.nav-link:hover {
+  color: var(--color-sunset-gold-500);
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-sunset-gold);
+  transition: width 0.2s ease;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.nav-form {
+  display: inline;
+}
+
+/* ------------------------------ Navigation - Button ------------------------------ */
+.nav-button {
+  font-family: var(--font-inter);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-ocean-midnight);
+  background: none;
+  border: none;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  position: relative;
+}
+
+.nav-button:hover {
+  color: var(--color-sunset-gold-500);
+}
+
+.nav-button::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-sunset-gold);
+  transition: width 0.2s ease;
+}
+
+.nav-button:hover::after {
+  width: 100%;
+}

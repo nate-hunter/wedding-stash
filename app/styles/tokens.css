@@ -1,79 +1,37 @@
-@import 'tailwindcss';
+/* TODO: Break this up into multiple files? E.g. tokens/colors.css, tokens/spacing.css, tokens/typography.css, etc. */
+/* TODO: Clean up redundant tokens / remove unused tokens */
 
-/* TODO: Is this needed/useful? It was causing issues / overriding defined styles */
-/* @import 'tailwindcss/preflight'; */
-@import 'tailwindcss/utilities';
-
-/* Import organized style files */
-/* TODO: Implement stylesheets in this structure? */
-/* @import './styles/tokens/spacing.css'; */
-@import './styles/base.css';
-@import './styles/tokens.css';
-@import './styles/fonts.css';
-@import './styles/components.css';
-
+/* Design tokens and CSS custom properties */
 :root {
-  --background: var(--surface-color);
-  --foreground: var(--font-color);
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Surface colors for light mode */
+  --surface-color-light: hsl(40, 100%, 97%);
+  --surface-color-light-overlay: hsl(40, 100%, 100%);
+  --border-color-on-light: var(--color-neutral-200);
+  --font-color-on-light: var(--color-default-d900);
+  --font-color-on-light-alt-1: var(--color-default-d800);
+  --font-color-on-light-alt-2: var(--color-neutral-800);
+  --font-color-on-light-disabled: var(--color-neutral-700);
 
-  color-scheme: var(--color-scheme);
+  /* Surface colors for dark mode */
+  --surface-color-dark: var(--color-neutral-850);
+  --surface-color-dark-overlay: var(--color-neutral-875);
+  --border-color-on-dark: var(--color-neutral-750);
+  --font-color-on-dark: var(--color-neutral-0);
+  --font-color-on-dark-alt-1: var(--color-neutral-150);
+  --font-color-on-dark-alt-2: var(--color-neutral-300);
+  --font-color-on-dark-disabled: var(--color-neutral-400);
 
-  background-color: var(--background);
-  color: var(--font-color);
+  /* Default surface colors */
+  --surface-color: var(--surface-color-light);
+  --surface-color-overlay: var(--surface-color-light-overlay);
+  --border-color: var(--border-color-on-light);
+  --border-color-app: var(--color-sunset-gold-op-75);
+  --font-color: var(--font-color-on-light);
+  --font-color-alt-1: var(--font-color-on-light-alt-1);
+  --font-color-alt-2: var(--font-color-on-light-alt-2);
+  --font-color-disabled: var(--font-color-on-light-disabled);
 
-  line-height: var(--line-height-base);
-
-  font-family: var(--font-inter);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-base);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-playfair);
-}
-
-/* TODO: Implement dark mode */
-/* @media (prefers-color-scheme: dark) {
-  :root {
-    --background: var(--surface-color-dark);
-    --foreground: var(--font-color-on-dark);
-
-    --surface-color: var(--surface-color-dark);
-    --surface-color-alt: var(--surface-color-dark-alt);
-
-    --font-color: var(--font-color-on-dark);
-    --font-color-alt-1: var(--font-color-on-dark-alt-1);
-    --font-color-alt-2: var(--font-color-on-dark-alt-2);
-    --font-color-disabled: var(--font-color-on-dark-disabled);
-  }
-} */
-
-/* TODO: Move these tokens to dedicated files? */
-/* ------------------------SPACING THEME------------------------ */
-@theme {
-  --ratio: 1.618;
-  --base: 1rem;
-  --spacing-sp-5: calc(var(--sp-4) / var(--ratio));
-  --spacing-sp-4: calc(var(--sp-3) / var(--ratio));
-  --spacing-sp-3: calc(var(--sp-2) / var(--ratio));
-  --spacing-sp-2: calc(var(--sp-1) / var(--ratio));
-  --spacing-sp-1: calc(var(--sp0) / var(--ratio));
-  --spacing-sp0: var(--base);
-  --spacing-sp1: calc(var(--sp0) * var(--ratio));
-  --spacing-sp2: calc(var(--sp1) * var(--ratio));
-  --spacing-sp3: calc(var(--sp2) * var(--ratio));
-  --spacing-sp4: calc(var(--sp3) * var(--ratio));
-  --spacing-sp5: calc(var(--sp4) * var(--ratio));
-}
-
-@theme {
-  /* ------------------------------ Sunset Gold Color Palette ------------------------------ */
+  /* Sunset Gold Color Palette */
   --color-sunset-gold-100: hsla(36, 69%, 86%, 1);
   --color-sunset-gold-150: hsla(37, 68%, 81%, 1);
   --color-sunset-gold-200: hsla(37, 69%, 76%, 1);
@@ -123,6 +81,73 @@
   --color-ocean-midnight-op-10: hsla(249, 14%, 18%, 0.1);
   --color-ocean-midnight-op-09: hsla(249, 14%, 18%, 0.09);
 
+  /* Typography tokens */
+  --font-size-xxs: 0.6875rem;
+  --font-size-xs: 0.8125rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-md: var(--font-size-base);
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-xxl: 1.5rem;
+
+  /* Font weight tokens */
+  --font-weight-default: normal;
+  --font-weight-thin: 100;
+  --font-weight-extra-light: 200;
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semi-bold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extra-bold: 800;
+  --font-weight-black: 900;
+  --font-weight-heading: var(--font-weight-bold);
+  --font-weight-heading-bold: var(--font-weight-extra-bold);
+
+  /* Font family tokens */
+  --font-family-sans-serif: 'Inter', sans-serif;
+  --font-family-serif: 'Merriweather', serif;
+  --font-family-monospace: 'Roboto Mono', monospace;
+
+  /* Golden Ratio Spacing System */
+  --ratio: 1.618;
+  --base: 1rem;
+  --sp-5: calc(var(--sp-4) / var(--ratio));
+  --sp-4: calc(var(--sp-3) / var(--ratio));
+  --sp-3: calc(var(--sp-2) / var(--ratio));
+  --sp-2: calc(var(--sp-1) / var(--ratio));
+  --sp-1: calc(var(--sp0) / var(--ratio));
+  --sp0: var(--base);
+  --sp1: calc(var(--sp0) * var(--ratio));
+  --sp2: calc(var(--sp1) * var(--ratio));
+  --sp3: calc(var(--sp2) * var(--ratio));
+  --sp4: calc(var(--sp3) * var(--ratio));
+  --sp5: calc(var(--sp4) * var(--ratio));
+
+  /* Border radius tokens */
+  --radius-sharp: 0px;
+  --radius-straight: 0.25rem;
+  --radius-curved: 0.5rem;
+  --radius-rounded: 0.8125rem;
+  --radius-pill: 9999px;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+
+  /* Shadow tokens */
+  --shadow: hsla(0, 0%, 0%, 0.188) 0px 0px 10px 0px;
+  --shadow-sm: hsla(0, 0%, 0%, 0.05) 0 1px 2px 0;
+  --shadow-md: hsla(0, 0%, 0%, 0.1) 0 4px 6px -1px;
+  --shadow-lg: hsla(0, 0%, 0%, 0.1) 0 10px 15px -3px;
+
+  --topbar-size-y: 55px;
+  --sidebar-size-x-full: 240px;
+  --sidebar-size-x-closed: 48px;
+}
+
+:root {
   /* ------------------------------ SEMANTIC COLORS ------------------------------ */
   --color-primary: var(--color-sunset-gold);
   --color-secondary: var(--color-sunset-gold-op-30);
@@ -227,7 +252,9 @@
   --color-neutral-900: hsl(0, 0%, 10%);
   --color-neutral-950: hsl(0, 0%, 5%);
   --color-neutral-1000: hsl(0, 0%, 0%); /* BLACK */
+}
 
+:root {
   /* ------------------------------ LILIKOI UI COLORS ------------------------------ */
   /* NEUTRAL */
   --color-neutral-alt-0: hsla(0, 0%, 100%, 1);
