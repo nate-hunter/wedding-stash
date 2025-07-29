@@ -1,0 +1,75 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+
+import { createClient } from '@/utils/supabase/client';
+import { User } from '@supabase/supabase-js';
+
+import Button from '@/components/Button';
+import { UploadIcon } from '@/components/Icon';
+
+export default function Navigation() {
+  const [user, setUser] = useState<User | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    };
+
+    getUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
+
+  return (
+    <nav className='nav-bar'>
+      <div className='nav-container'>
+        <div className='inline-flex items-center gap-sp2'>
+          <Link href='/' className='nav-brand'>
+            Wedding Stash
+          </Link>
+          <Link href='/gallery' className='nav-link'>
+            Gallery
+          </Link>
+        </div>
+
+        <div className='nav-links'>
+          {user ? (
+            <>
+              <Button href='/gallery/upload' asLink variant='sunset' width='fit'>
+                <UploadIcon size={15} />
+                Upload Photos
+              </Button>
+              {/* <Link href='/gallery' className='nav-link'>
+                Gallery
+              </Link> */}
+              {/* <Link href='/account' className='nav-link'>
+                Account
+              </Link> */}
+              <form action='/auth/signout' method='post' className='nav-form'>
+                <Button type='submit' bg='inverted' width='fit'>
+                  Sign Out
+                </Button>
+              </form>
+            </>
+          ) : (
+            <Link href='/login' className='nav-link'>
+              Sign In
+            </Link>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+}
