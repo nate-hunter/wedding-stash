@@ -1,0 +1,45 @@
+/* Base styles and resets */
+/*  CSS reset */
+
+/* TODO: Can this file be updated / cleaned up? */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+
+    /* min-block-size: 100vh; */
+    /* color-scheme: dark; */
+    /* color-scheme: light dark; */
+    /* background-color: var(--surface-color-light); */
+    /* background-color: var(--surface-color-dark); */
+    /* color: var(--font-color); */
+    /* color: var(--font-on-dark); */
+    /* color: var(--font-on-light); */
+    /* font: var(--font-body-md); */
+  }
+
+  /* Focus styles for accessibility */
+  *:focus-visible {
+    outline: 2px solid var(--color-sunset-gold-500);
+    outline-offset: 2px;
+  }
+
+  /* Remove focus outline for mouse users */
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+}
