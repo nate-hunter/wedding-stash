@@ -1,5 +1,11 @@
 # WEDDING STASH
 
+## Tools + Technologies Used:
+
+- Next.JS
+- Supabase
+- Google Photos API
+
 ## Getting Started
 
 First, run the development server:
