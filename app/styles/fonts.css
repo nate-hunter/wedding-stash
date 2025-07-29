@@ -1,0 +1,30 @@
+/* Font family declarations and typography styles */
+@layer base {
+  /* Font family declarations using Next.js font variables */
+  .font-sans {
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .font-serif {
+    font-family: var(--font-playfair), ui-serif, Georgia, serif;
+  }
+
+  /* Typography utilities */
+  .text-heading {
+    font-family: var(--font-playfair), ui-serif, Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  .text-body {
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 400;
+    line-height: 1.625;
+  }
+
+  .text-caption {
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    font-size: var(--font-size-sm);
+    color: var(--color-ocean-midnight-op-60);
+  }
+}
