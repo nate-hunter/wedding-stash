@@ -1,26 +1,318 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/* TODO: Is this needed/useful? It was causing issues / overriding defined styles */
+/* @import 'tailwindcss/preflight'; */
+@import 'tailwindcss/utilities';
+
+/* Import organized style files */
+/* TODO: Implement stylesheets in this structure? */
+/* @import './styles/tokens/spacing.css'; */
+@import './styles/base.css';
+@import './styles/tokens.css';
+@import './styles/fonts.css';
+@import './styles/components.css';
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
+  --background: var(--surface-color);
+  --foreground: var(--font-color);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  color-scheme: var(--color-scheme);
+
+  background-color: var(--background);
+  color: var(--font-color);
+
+  line-height: var(--line-height-base);
+
+  font-family: var(--font-inter);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-base);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-playfair);
 }
 
-@media (prefers-color-scheme: dark) {
+/* TODO: Implement dark mode */
+/* @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: var(--surface-color-dark);
+    --foreground: var(--font-color-on-dark);
+
+    --surface-color: var(--surface-color-dark);
+    --surface-color-alt: var(--surface-color-dark-alt);
+
+    --font-color: var(--font-color-on-dark);
+    --font-color-alt-1: var(--font-color-on-dark-alt-1);
+    --font-color-alt-2: var(--font-color-on-dark-alt-2);
+    --font-color-disabled: var(--font-color-on-dark-disabled);
   }
+} */
+
+/* TODO: Move these tokens to dedicated files? */
+/* ------------------------SPACING THEME------------------------ */
+@theme {
+  --ratio: 1.618;
+  --base: 1rem;
+  --spacing-sp-5: calc(var(--sp-4) / var(--ratio));
+  --spacing-sp-4: calc(var(--sp-3) / var(--ratio));
+  --spacing-sp-3: calc(var(--sp-2) / var(--ratio));
+  --spacing-sp-2: calc(var(--sp-1) / var(--ratio));
+  --spacing-sp-1: calc(var(--sp0) / var(--ratio));
+  --spacing-sp0: var(--base);
+  --spacing-sp1: calc(var(--sp0) * var(--ratio));
+  --spacing-sp2: calc(var(--sp1) * var(--ratio));
+  --spacing-sp3: calc(var(--sp2) * var(--ratio));
+  --spacing-sp4: calc(var(--sp3) * var(--ratio));
+  --spacing-sp5: calc(var(--sp4) * var(--ratio));
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme {
+  /* ------------------------------ Sunset Gold Color Palette ------------------------------ */
+  --color-sunset-gold-100: hsla(36, 69%, 86%, 1);
+  --color-sunset-gold-150: hsla(37, 68%, 81%, 1);
+  --color-sunset-gold-200: hsla(37, 69%, 76%, 1);
+  --color-sunset-gold-300: hsla(37, 68%, 71%, 1); /* Base */
+  --color-sunset-gold-400: hsla(36, 68%, 66%, 1);
+  --color-sunset-gold-500: hsla(36, 69%, 61%, 1);
+  --color-sunset-gold-600: hsla(37, 68%, 56%, 1);
+  --color-sunset-gold: var(--color-sunset-gold-300); /* Base */
+  --color-sunset-gold-op-75: hsla(37, 68%, 71%, 0.75);
+  --color-sunset-gold-op-60: hsla(37, 68%, 71%, 0.6);
+  --color-sunset-gold-op-50: hsla(37, 68%, 71%, 0.5);
+  --color-sunset-gold-op-40: hsla(37, 68%, 71%, 0.4);
+  --color-sunset-gold-op-30: hsla(37, 68%, 71%, 0.3);
+  --color-sunset-gold-op-25: hsla(37, 68%, 71%, 0.25);
+  --color-sunset-gold-op-20: hsla(37, 68%, 71%, 0.2);
+  --color-sunset-gold-op-10: hsla(37, 68%, 71%, 0.1);
+  --color-sunset-gold-op-09: hsla(37, 68%, 71%, 0.09);
+  --color-sunset-gold-700: hsla(37, 68%, 40%, 1);
+  --color-sunset-gold-800: hsla(37, 68%, 26%, 1);
+  --color-sunset-gold-900: hsla(37, 68%, 10%, 1);
+  --color-sunset-gold-1000: hsla(37, 68%, 5%, 1);
+
+  /* Buttery Yellow Color Palette */
+  --color-buttery-yellow: hsla(52, 97%, 85%, 1);
+  --color-buttery-yellow-op-75: hsla(52, 97%, 85%, 0.75);
+  --color-buttery-yellow-op-60: hsla(52, 97%, 85%, 0.6);
+  --color-buttery-yellow-op-40: hsla(52, 97%, 85%, 0.4);
+  --color-buttery-yellow-op-20: hsla(52, 97%, 85%, 0.2);
+  --color-buttery-yellow-op-09: hsla(52, 97%, 85%, 0.09);
+
+  /* Sage Green Color Palette */
+  --color-sage-green: hsla(98, 12%, 59%, 1);
+  --color-sage-green-op-75: hsla(98, 12%, 59%, 0.75);
+  --color-sage-green-op-60: hsla(98, 12%, 59%, 0.6);
+  --color-sage-green-op-40: hsla(98, 12%, 59%, 0.4);
+  --color-sage-green-op-20: hsla(98, 12%, 59%, 0.2);
+  --color-sage-green-op-09: hsla(98, 12%, 59%, 0.09);
+
+  /* Ocean Midnight Color Palette */
+  --color-ocean-midnight: hsla(249, 14%, 18%, 1);
+  --color-ocean-midnight-op-75: hsla(249, 14%, 18%, 0.75);
+  --color-ocean-midnight-op-60: hsla(249, 14%, 18%, 0.6);
+  --color-ocean-midnight-op-50: hsla(249, 14%, 18%, 0.5);
+  --color-ocean-midnight-op-40: hsla(249, 14%, 18%, 0.4);
+  --color-ocean-midnight-op-30: hsla(249, 14%, 18%, 0.3);
+  --color-ocean-midnight-op-20: hsla(249, 14%, 18%, 0.2);
+  --color-ocean-midnight-op-10: hsla(249, 14%, 18%, 0.1);
+  --color-ocean-midnight-op-09: hsla(249, 14%, 18%, 0.09);
+
+  /* ------------------------------ SEMANTIC COLORS ------------------------------ */
+  --color-primary: var(--color-sunset-gold);
+  --color-secondary: var(--color-sunset-gold-op-30);
+  /* SUCCESS */
+  --color-success-050: hsl(137, 49%, 96%);
+  --color-success-100: hsl(137, 49%, 90%);
+  --color-success-200: hsl(137, 49%, 80%);
+  --color-success-300: hsl(137, 49%, 70%);
+  --color-success-400: hsl(137, 49%, 60%);
+  --color-success-500: hsl(137, 49%, 54%); /* BASE */
+  --color-success-600: hsl(137, 49%, 40%);
+  --color-success-700: hsl(137, 49%, 30%);
+  --color-success-800: hsl(137, 49%, 20%);
+  --color-success-900: hsl(137, 49%, 10%);
+  --color-success: var(--color-success-500);
+  --color-success-op-75: hsla(137, 49%, 54%, 0.75);
+  --color-success-op-60: hsla(137, 49%, 54%, 0.6);
+  --color-success-op-50: hsla(137, 49%, 54%, 0.5);
+  --color-success-op-40: hsla(137, 49%, 54%, 0.4);
+  --color-success-op-30: hsla(137, 49%, 54%, 0.3);
+  --color-success-op-20: hsla(137, 49%, 54%, 0.2);
+  --color-success-op-10: hsla(137, 49%, 54%, 0.1);
+
+  /* DANGER */
+  --color-danger-050: hsl(354, 70%, 96%);
+  --color-danger-100: hsl(354, 70%, 90%);
+  --color-danger-200: hsl(354, 70%, 80%);
+  --color-danger-300: hsl(354, 70%, 70%);
+  --color-danger-400: hsl(354, 70%, 60%);
+  --color-danger-500: hsl(354, 70%, 54%); /* BASE */
+  --color-danger-600: hsl(354, 70%, 40%);
+  --color-danger-700: hsl(354, 70%, 30%);
+  --color-danger-800: hsl(354, 70%, 20%);
+  --color-danger-900: hsl(354, 70%, 10%);
+  --color-danger: var(--color-danger-500);
+  --color-danger-op-75: hsla(354, 70%, 54%, 0.75);
+  --color-danger-op-60: hsla(354, 70%, 54%, 0.6);
+  --color-danger-op-50: hsla(354, 70%, 54%, 0.5);
+  --color-danger-op-40: hsla(354, 70%, 54%, 0.4);
+  --color-danger-op-30: hsla(354, 70%, 54%, 0.3);
+  --color-danger-op-20: hsla(354, 70%, 54%, 0.2);
+  --color-danger-op-10: hsla(354, 70%, 54%, 0.1);
+
+  /* WARNING */
+  --color-warning-050: hsl(45, 100%, 96%);
+  --color-warning-100: hsl(45, 100%, 90%);
+  --color-warning-200: hsl(45, 100%, 80%);
+  --color-warning-300: hsl(45, 100%, 70%);
+  --color-warning-400: hsl(45, 100%, 60%);
+  --color-warning-500: hsl(45, 100%, 51%); /* BASE */
+  --color-warning-600: hsl(45, 100%, 40%);
+  --color-warning-700: hsl(45, 100%, 30%);
+  --color-warning-800: hsl(45, 100%, 20%);
+  --color-warning-900: hsl(45, 100%, 10%);
+  --color-warning: var(--color-warning-500);
+  --color-warning-op-75: hsla(45, 100%, 51%, 0.75);
+  --color-warning-op-60: hsla(45, 100%, 51%, 0.6);
+  --color-warning-op-50: hsla(45, 100%, 51%, 0.5);
+  --color-warning-op-40: hsla(45, 100%, 51%, 0.4);
+  --color-warning-op-30: hsla(45, 100%, 51%, 0.3);
+  --color-warning-op-20: hsla(45, 100%, 51%, 0.2);
+  --color-warning-op-10: hsla(45, 100%, 51%, 0.1);
+
+  --color-warning-alt: hsl(35, 100%, 46%);
+
+  /* INFO */
+  --color-info-050: hsl(214, 100%, 96%);
+  --color-info-100: hsl(214, 100%, 90%);
+  --color-info-200: hsl(214, 100%, 80%);
+  --color-info-300: hsl(214, 100%, 70%);
+  --color-info-400: hsl(214, 100%, 60%);
+  --color-info-500: hsl(214, 100%, 50%); /* BASE */
+  --color-info-600: hsl(214, 100%, 40%);
+  --color-info-700: hsl(214, 100%, 30%);
+  --color-info-800: hsl(214, 100%, 20%);
+  --color-info-900: hsl(214, 100%, 10%);
+  --color-info: var(--color-info-500);
+  --color-info-op-75: hsla(214, 100%, 50%, 0.75);
+  --color-info-op-60: hsla(214, 100%, 50%, 0.6);
+  --color-info-op-50: hsla(214, 100%, 50%, 0.5);
+  --color-info-op-40: hsla(214, 100%, 50%, 0.4);
+  --color-info-op-30: hsla(214, 100%, 50%, 0.3);
+  --color-info-op-20: hsla(214, 100%, 50%, 0.2);
+  --color-info-op-10: hsla(214, 100%, 50%, 0.1);
+
+  /* NEUTRAL */
+  /* --color-neutral: var(--color-ocean-midnight); */
+  --color-neutral-0: hsl(0, 0%, 100%); /* WHITE */
+  --color-neutral-50: hsl(0, 0%, 98%);
+  --color-neutral-75: hsl(0, 0%, 96%);
+  --color-neutral-100: hsl(0, 0%, 90%);
+  --color-neutral-200: hsl(0, 0%, 80%);
+  --color-neutral-300: hsl(0, 0%, 70%);
+  --color-neutral-400: hsl(0, 0%, 60%);
+  --color-neutral-500: hsl(0, 0%, 50%);
+  --color-neutral-600: hsl(0, 0%, 40%);
+  --color-neutral-700: hsl(0, 0%, 30%);
+  --color-neutral-750: hsl(0, 0%, 23%);
+  --color-neutral-800: hsl(0, 0%, 20%);
+  --color-neutral-850: hsl(0, 0%, 14%);
+  --color-neutral-875: hsl(0, 0%, 12%);
+  --color-neutral-900: hsl(0, 0%, 10%);
+  --color-neutral-950: hsl(0, 0%, 5%);
+  --color-neutral-1000: hsl(0, 0%, 0%); /* BLACK */
+
+  /* ------------------------------ LILIKOI UI COLORS ------------------------------ */
+  /* NEUTRAL */
+  --color-neutral-alt-0: hsla(0, 0%, 100%, 1);
+  --color-neutral-alt-50: hsla(0, 0%, 98%, 1);
+  --color-neutral-alt-75: hsla(220, 16%, 96%, 1);
+  --color-neutral-alt-100: hsla(218, 13%, 83%, 1);
+  --color-neutral-alt-150: hsla(0, 0%, 78%, 1);
+  --color-neutral-alt-200: hsla(219, 13%, 74%, 1);
+  --color-neutral-alt-300: hsla(218, 13%, 66%, 1);
+  --color-neutral-alt-400: hsla(0, 0%, 43%, 1);
+  --color-neutral-alt-700: hsla(0, 0%, 23%, 1);
+  --color-neutral-alt-800: hsla(0, 0%, 14%, 1);
+  --color-neutral-alt-850: hsla(0, 0%, 12%, 1);
+  --color-neutral-alt-1000: hsla(0, 0%, 0%, 1);
+
+  /* DEFAULT */
+  --color-default-d50: hsla(210, 5%, 92%, 1);
+  --color-default-d50-op-00: hsla(210, 5%, 92%, 0);
+  --color-default-d50-op-20: hsla(210, 5%, 92%, 0.2);
+  --color-default-d50-op-25: hsla(210, 5%, 92%, 0.25);
+  --color-default-d50-op-09: hsla(210, 5%, 92%, 0.09);
+  --color-default-d50-op-10: hsla(210, 5%, 92%, 0.1);
+  --color-default-d50-op-27: hsla(210, 5%, 92%, 0.27);
+  --color-default-d50-op-40: hsla(210, 5%, 92%, 0.4);
+  --color-default-d50-op-50: hsla(210, 5%, 92%, 0.5);
+  --color-default-d50-op-60: hsla(210, 5%, 92%, 0.6);
+  --color-default-d50-op-73: hsla(210, 5%, 92%, 0.73);
+  --color-default-d50-op-75: hsla(210, 5%, 92%, 0.75);
+  --color-default-75: hsla(218, 5%, 67%, 1);
+  --color-default-d100: hsla(220, 5%, 75%, 1);
+  --color-default-d200: hsla(216, 5%, 64%, 1);
+  --color-default-d300: hsla(214, 6%, 47%, 1);
+  --color-default-d300-op-00: hsla(214, 6%, 47%, 0);
+  --color-default-d300-op-09: hsla(214, 6%, 47%, 0.09);
+  --color-default-d300-op-10: hsla(214, 6%, 47%, 0.1);
+  --color-default-d300-op-20: hsla(214, 6%, 47%, 0.2);
+  --color-default-d300-op-25: hsla(214, 6%, 47%, 0.25);
+  --color-default-d300-op-27: hsla(214, 6%, 47%, 0.27);
+  --color-default-d300-op-40: hsla(214, 6%, 47%, 0.4);
+  --color-default-d300-op-50: hsla(214, 6%, 47%, 0.5);
+  --color-default-d300-op-60: hsla(214, 6%, 47%, 0.6);
+  --color-default-d300-op-73: hsla(214, 6%, 47%, 0.73);
+  --color-default-d300-op-75: hsla(214, 6%, 47%, 0.75);
+  --color-default-d400: hsla(217, 9%, 36%, 1);
+  --color-default-d500: hsla(217, 20%, 21%, 1);
+  --color-default-d500-op-75: hsla(217, 20%, 21%, 0.75);
+  --color-default-d500-op-73: hsla(217, 20%, 21%, 0.73);
+  --color-default-d500-op-60: hsla(217, 20%, 21%, 0.6);
+  --color-default-d500-op-50: hsla(217, 20%, 21%, 0.5);
+  --color-default-d500-op-40: hsla(217, 20%, 21%, 0.4);
+  --color-default-d500-op-27: hsla(217, 20%, 21%, 0.27);
+  --color-default-d500-op-25: hsla(217, 20%, 21%, 0.25);
+  --color-default-d500-op-20: hsla(217, 20%, 21%, 0.2);
+  --color-default-d500-op-10: hsla(217, 20%, 21%, 0.1);
+  --color-default-d500-op-09: hsla(217, 20%, 21%, 0.09);
+  --color-default-d600: hsla(215, 20%, 19%, 1);
+  --color-default-d700: hsla(216, 20%, 15%, 1);
+  --color-default-d800: hsla(215, 21%, 11%, 1);
+  --color-default-d900: hsla(218, 18%, 9%, 1);
+
+  /* LILIKOI */
+  --color-lilikoi-50: hsl(249, 100%, 97%);
+  --color-lilikoi-55: hsl(249, 100%, 95%);
+  --color-lilikoi-60: hsl(249, 100%, 93%);
+  --color-lilikoi-100: hsl(249, 100%, 90%);
+  --color-lilikoi-150: hsl(249, 100%, 87%);
+  --color-lilikoi-200: hsl(250, 100%, 79%);
+  --color-lilikoi-300: hsl(250, 100%, 75%); /* BASE */
+  --color-lilikoi-400: hsl(250, 70%, 67%);
+  --color-lilikoi-450: hsl(249, 50%, 60%);
+  --color-lilikoi-500: hsl(250, 43%, 56%);
+  --color-lilikoi-550: hsl(250, 37%, 53%);
+  --color-lilikoi-600: hsl(250, 34%, 46%);
+  --color-lilikoi-650: hsl(250, 34%, 45%);
+  --color-lilikoi-700: hsl(250, 34%, 34%);
+  --color-lilikoi-800: hsl(251, 34%, 26%);
+  --color-lilikoi-900: hsl(251, 34%, 18%);
+  --color-lilikoi-1000: hsl(251, 34%, 10%);
+  --color-lilikoi: var(--color-lilikoi-300); /* BASE */
+  --color-lilikoi-op-90: hsla(250, 100%, 75%, 0.9);
+  --color-lilikoi-op-75: hsla(250, 100%, 75%, 0.75);
+  --color-lilikoi-op-60: hsla(250, 100%, 75%, 0.6);
+  --color-lilikoi-op-50: hsla(250, 100%, 75%, 0.5);
+  --color-lilikoi-op-40: hsla(250, 100%, 75%, 0.4);
+  --color-lilikoi-op-30: hsla(250, 100%, 75%, 0.3);
+  --color-lilikoi-op-20: hsla(250, 100%, 75%, 0.2);
+  --color-lilikoi-op-10: hsla(250, 100%, 75%, 0.1);
 }
