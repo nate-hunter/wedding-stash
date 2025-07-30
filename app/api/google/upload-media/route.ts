@@ -1,5 +1,4 @@
-// API Route for uploading photos to Google Photos (App Router)
-// This route addresses security, performance, and code quality concerns from the audit
+// API Route for uploading media to Google Photos (App Router)
 // All users upload to a shared Google Photos album
 
 import { google } from 'googleapis';
@@ -115,22 +114,6 @@ function validateFile(file: File, filename: string): { isValid: boolean; error?:
 
 // Google OAuth2 client initialization
 async function initializeGoogleClient() {
-  console.log('Initializing Google OAuth2 client...');
-  console.log('Client ID exists:', !!process.env.GOOGLE_CLIENT_ID);
-  console.log('Client Secret exists:', !!process.env.GOOGLE_CLIENT_SECRET);
-  console.log('Refresh Token exists:', !!process.env.GOOGLE_REFRESH_TOKEN);
-
-  // Log partial values for debugging (first 10 chars)
-  if (process.env.GOOGLE_CLIENT_ID) {
-    console.log('Client ID starts with:', process.env.GOOGLE_CLIENT_ID.substring(0, 10) + '...');
-  }
-  if (process.env.GOOGLE_REFRESH_TOKEN) {
-    console.log(
-      'Refresh Token starts with:',
-      process.env.GOOGLE_REFRESH_TOKEN.substring(0, 10) + '...',
-    );
-  }
-
   if (
     !process.env.GOOGLE_CLIENT_ID ||
     !process.env.GOOGLE_CLIENT_SECRET ||
@@ -144,12 +127,10 @@ async function initializeGoogleClient() {
     process.env.GOOGLE_CLIENT_SECRET,
   );
 
-  console.log('Setting OAuth2 credentials...');
   oauth2Client.setCredentials({
     refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
   });
 
-  console.log('Getting access token...');
   try {
     const { token: accessToken } = await oauth2Client.getAccessToken();
 
@@ -157,32 +138,8 @@ async function initializeGoogleClient() {
       throw new Error('Failed to obtain Google access token - no token returned');
     }
 
-    console.log('Successfully obtained access token');
-
-    // Debug: Check what scopes the access token has
-    try {
-      const tokenInfoResponse = await fetch(
-        'https://oauth2.googleapis.com/tokeninfo?access_token=' + accessToken,
-      );
-      if (tokenInfoResponse.ok) {
-        const tokenInfo = await tokenInfoResponse.json();
-        console.log('Access token scopes:', tokenInfo.scope);
-        console.log('Access token audience:', tokenInfo.aud);
-      }
-    } catch (error) {
-      console.log('Could not decode token info:', error);
-    }
-
     return { oauth2Client, accessToken };
   } catch (error) {
-    console.error('OAuth2 error details:', error);
-
-    // More detailed error analysis
-    if (error && typeof error === 'object' && 'code' in error) {
-      console.error('Error code:', (error as any).code);
-      console.error('Error status:', (error as any).status);
-    }
-
     throw new Error(
       `OAuth2 authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
@@ -215,26 +172,6 @@ async function uploadToGooglePhotos(
   return await uploadResponse.text();
 }
 
-// List albums to find the correct album ID
-async function listAlbums(accessToken: string): Promise<unknown> {
-  const listAlbumsUrl = 'https://photoslibrary.googleapis.com/v1/albums';
-
-  const response = await fetch(listAlbumsUrl, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  if (!response.ok) {
-    const errorJson = await response.json();
-    throw new Error(`Failed to list albums: ${response.status} - ${JSON.stringify(errorJson)}`);
-  }
-
-  return await response.json();
-}
-
 // Create media item in Google Photos
 async function createMediaItem(
   uploadToken: string,
@@ -259,9 +196,6 @@ async function createMediaItem(
   // Only add albumId if it's provided and not empty
   if (process.env.GOOGLE_PHOTOS_ALBUM_ID && process.env.GOOGLE_PHOTOS_ALBUM_ID.trim() !== '') {
     mediaItemBody.albumId = process.env.GOOGLE_PHOTOS_ALBUM_ID;
-    console.log('Using album ID:', process.env.GOOGLE_PHOTOS_ALBUM_ID);
-  } else {
-    console.log('No album ID provided, uploading to main library');
   }
 
   const createMediaItemResponse = await fetch(createMediaItemUrl, {
@@ -287,12 +221,7 @@ async function createMediaItem(
 
 // POST handler for App Router
 export async function POST(request: NextRequest): Promise<NextResponse<UploadResponse>> {
-  console.log('************ google-upload-v2/route.ts / POST(req) ************');
-
   const startTime = Date.now();
-  const correlationId = `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-  console.log(`[${correlationId}] Starting photo upload request`);
 
   try {
     // Validate environment variables
@@ -305,10 +234,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
       error: authError,
     } = await supabase.auth.getUser();
 
-    console.log('$ { user } =>', user);
-
     if (authError || !user) {
-      console.log(`[${correlationId}] Authentication failed:`, authError);
       return NextResponse.json(
         {
           success: false,
@@ -322,25 +248,13 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
       );
     }
 
-    console.log(`[${correlationId}] User authenticated:`, user.id);
-
-    // Parse form data using native Next.js formData()
+    // Parse form data
     const formData = await request.formData();
 
     // Extract file and form data
     const mediaFile = formData.get('media') as File | null;
-    const title = (formData.get('title') as string) || '';
     const description = (formData.get('description') as string) || '';
     const filename = (formData.get('filename') as string) || mediaFile?.name || 'unnamed_file';
-
-    console.log(`[${correlationId}] Form data parsed:`, {
-      hasFile: !!mediaFile,
-      title,
-      description,
-      filename,
-      fileSize: mediaFile?.size,
-      fileType: mediaFile?.type,
-    });
 
     if (!mediaFile) {
       return NextResponse.json(
@@ -372,8 +286,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
       );
     }
 
-    console.log(`[${correlationId}] File validated: ${filename} (${mediaFile.size} bytes)`);
-
     // Initialize Google client
     const { accessToken } = await initializeGoogleClient();
 
@@ -387,19 +299,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
       accessToken,
     );
 
-    console.log(`[${correlationId}] File uploaded to Google Photos, creating media item`);
-
     // Create media item
     const result = await createMediaItem(uploadToken, filename, description, accessToken);
 
     const uploadTime = Date.now() - startTime;
 
-    console.log(`[${correlationId}] Upload completed successfully in ${uploadTime}ms`);
-
     // Return success response
     return NextResponse.json({
       success: true,
-      message: 'File uploaded successfully to Google Photos',
+      message: 'Media uploaded successfully to Google Photos',
       data: {
         mediaItemId: (result as { newMediaItemResults?: Array<{ mediaItem?: { id?: string } }> })
           ?.newMediaItemResults?.[0]?.mediaItem?.id,
@@ -410,8 +318,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
       },
     });
   } catch (error: unknown) {
-    console.error(`[${correlationId}] Upload failed:`, error);
-
     return NextResponse.json(
       {
         success: false,
@@ -432,54 +338,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
 
 // Handle other HTTP methods
 export async function GET(): Promise<NextResponse> {
-  try {
-    console.log('Testing OAuth2 authentication...');
-    const { accessToken } = await initializeGoogleClient();
-
-    // Test multiple endpoints to isolate the issue
-    const endpoints = [
-      { name: 'albums', url: 'https://photoslibrary.googleapis.com/v1/albums' },
-      { name: 'mediaItems', url: 'https://photoslibrary.googleapis.com/v1/mediaItems?pageSize=1' },
-      { name: 'sharedAlbums', url: 'https://photoslibrary.googleapis.com/v1/sharedAlbums' },
-    ];
-
-    const results = {};
-
-    for (const endpoint of endpoints) {
-      try {
-        const response = await fetch(endpoint.url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          results[endpoint.name] = { success: true, data };
-        } else {
-          const errorData = await response.json();
-          results[endpoint.name] = { success: false, error: errorData };
-        }
-      } catch (error) {
-        results[endpoint.name] = { success: false, error: error.message };
-      }
-    }
-
-    console.log('API test results:', results);
-    return NextResponse.json({
-      success: true,
-      message: 'OAuth2 authentication working',
-      results,
-    });
-  } catch (error) {
-    console.error('Failed to test OAuth2:', error);
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 },
-    );
-  }
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
 }
 
 export async function PUT(): Promise<NextResponse> {
