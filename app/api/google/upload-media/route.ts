@@ -4,6 +4,7 @@
 import { google } from 'googleapis';
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import type { User, SupabaseClient } from '@supabase/supabase-js';
 
 // Constants and configuration
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for photos
@@ -32,6 +33,13 @@ const ALLOWED_EXTENSIONS = [
 ];
 
 // Type definitions
+interface GoogleAlbum {
+  id: string;
+  title: string;
+  productUrl: string;
+  isWriteable?: boolean;
+}
+
 interface UploadResponse {
   success: boolean;
   message: string;
@@ -68,7 +76,7 @@ function validateEnvironment(): void {
     'GOOGLE_CLIENT_ID',
     'GOOGLE_CLIENT_SECRET',
     'GOOGLE_REFRESH_TOKEN',
-    'GOOGLE_PHOTOS_ALBUM_ID',
+    // 'GOOGLE_PHOTOS_ALBUM_ID', // No longer required, will be dynamic
   ];
 
   const missingVars = requiredEnvVars.filter((varName) => !process.env[varName]);
@@ -110,6 +118,84 @@ function validateFile(file: File, filename: string): { isValid: boolean; error?:
   }
 
   return { isValid: true };
+}
+
+// Create a new album in Google Photos
+async function createGoogleAlbum(title: string, accessToken: string): Promise<GoogleAlbum> {
+  const createAlbumUrl = 'https://photoslibrary.googleapis.com/v1/albums';
+  const response = await fetch(createAlbumUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ album: { title } }),
+  });
+
+  if (!response.ok) {
+    const errorJson = await response.json();
+    throw new Error(
+      `Failed to create Google album: ${response.status} - ${JSON.stringify(errorJson)}`,
+    );
+  }
+
+  return await response.json();
+}
+
+async function getOrCreateAlbum(
+  supabase: SupabaseClient,
+  user: User,
+  accessToken: string,
+): Promise<string> {
+  // 1. Check for existing album in our DB
+  const { data: existingAlbum, error: dbError } = await supabase
+    .from('google_photos_albums')
+    .select('google_album_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (dbError && dbError.code !== 'PGRST116') {
+    // PGRST116: no rows found
+    throw new Error(`Database error fetching album: ${dbError.message}`);
+  }
+
+  if (existingAlbum) {
+    return existingAlbum.google_album_id;
+  }
+
+  // 2. If no album, create one
+  const timestamp = new Date().toISOString().replace('T', '_').substring(0, 19);
+  const albumTitle = `${user.email}_${timestamp}`;
+
+  const newGoogleAlbum = await createGoogleAlbum(albumTitle, accessToken);
+
+  if (!newGoogleAlbum || !newGoogleAlbum.id) {
+    throw new Error('Failed to create Google Album, response was invalid.');
+  }
+
+  // 3. Save the new album to our DB
+  const { data: newDbAlbum, error: insertError } = await supabase
+    .from('google_photos_albums')
+    .insert({
+      user_id: user.id,
+      google_album_id: newGoogleAlbum.id,
+      title: newGoogleAlbum.title,
+      product_url: newGoogleAlbum.productUrl,
+      is_writeable: newGoogleAlbum.isWriteable,
+    })
+    .select('google_album_id')
+    .single();
+
+  if (insertError) {
+    // For now, we'll just log and throw. A more robust solution might try to delete the Google Album.
+    console.error(
+      'Failed to save new album to database, orphan album created in Google Photos:',
+      newGoogleAlbum.id,
+    );
+    throw new Error(`Database error saving new album: ${insertError.message}`);
+  }
+
+  return newDbAlbum.google_album_id;
 }
 
 // Google OAuth2 client initialization
@@ -177,6 +263,7 @@ async function createMediaItem(
   uploadToken: string,
   filename: string,
   description: string,
+  albumId: string,
   accessToken: string,
 ): Promise<unknown> {
   const createMediaItemUrl = 'https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate';
@@ -190,13 +277,9 @@ async function createMediaItem(
   };
 
   const mediaItemBody: BatchCreateRequest = {
+    albumId: albumId,
     newMediaItems: [newMediaItem],
   };
-
-  // Only add albumId if it's provided and not empty
-  if (process.env.GOOGLE_PHOTOS_ALBUM_ID && process.env.GOOGLE_PHOTOS_ALBUM_ID.trim() !== '') {
-    mediaItemBody.albumId = process.env.GOOGLE_PHOTOS_ALBUM_ID;
-  }
 
   const createMediaItemResponse = await fetch(createMediaItemUrl, {
     method: 'POST',
@@ -289,6 +372,9 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
     // Initialize Google client
     const { accessToken } = await initializeGoogleClient();
 
+    // Get or create album for the user
+    const albumId = await getOrCreateAlbum(supabase, user, accessToken);
+
     // Convert File to ArrayBuffer for upload
     const fileContent = await mediaFile.arrayBuffer();
 
@@ -300,7 +386,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
     );
 
     // Create media item
-    const result = await createMediaItem(uploadToken, filename, description, accessToken);
+    const result = await createMediaItem(uploadToken, filename, description, albumId, accessToken);
 
     const uploadTime = Date.now() - startTime;
 
