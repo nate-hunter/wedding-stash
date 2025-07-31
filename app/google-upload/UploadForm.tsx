@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, ChangeEvent, FormEvent, useRef } from 'react';
+import { API_ROUTES } from '@/utils/constants';
 
 // Type definitions for API responses
 interface UploadResponse {
@@ -210,10 +211,7 @@ function UploadForm() {
     formData.append('filename', filename || selectedFile.name);
 
     try {
-      // Fixed API endpoint URL
-      const URL = '/api/google-upload-v2';
-
-      const response = await fetch(URL, {
+      const response = await fetch(API_ROUTES.google.uploadMedia, {
         method: 'POST',
         body: formData,
       });

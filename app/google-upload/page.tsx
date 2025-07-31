@@ -2,7 +2,6 @@
 
 import React, { Suspense, useState, useEffect } from 'react';
 import UploadForm from './UploadForm';
-import CreateAlbumForm from './CreateAlbumForm';
 
 // Error Boundary Component (must remain class component due to React requirements)
 class ErrorBoundary extends React.Component<
@@ -115,9 +114,9 @@ function GoogleUploadPageContent() {
     <div className='min-h-screen bg-gray-50 py-8'>
       <div className='container mx-auto px-4'>
         <PageHeader />
-        <div className='w-fit mx-auto'>
+        {/* <div className='w-fit mx-auto'>
           <CreateAlbumForm />
-        </div>
+        </div> */}
         <UploadForm />
         <UploadGuidelines />
       </div>
