@@ -47,9 +47,20 @@ export default function Navigation() {
         <div className='nav-links'>
           {user ? (
             <>
-              <Button href='/gallery/upload' asLink variant='sunset' width='fit'>
+              <Button
+                href='/gallery/upload'
+                asLink
+                // variant='sunset'
+                // bg='inverted'
+                // isBordered
+                width='fit'
+              >
                 <UploadIcon size={15} />
-                Upload Photos
+                Supabase Photos
+              </Button>
+              <Button href='/google-upload' asLink variant='sunset' width='fit'>
+                <UploadIcon size={15} />
+                Google Photos
               </Button>
               {/* <Link href='/gallery' className='nav-link'>
                 Gallery
