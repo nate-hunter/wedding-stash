@@ -24,5 +24,6 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  // Ignore "Sand Box" files
+  "exclude": ["node_modules", "__sb/**", "**/__sb/**", "**/*.sb.*", "*.sb.*"]
 }
