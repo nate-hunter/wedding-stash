@@ -4,7 +4,7 @@ import { Inter, Playfair_Display } from 'next/font/google';
 import Navigation from '@/components/Navigation';
 
 import './globals.css';
-import './styles/components.css';
+import '@/styles/components.css';
 
 const inter = Inter({
   variable: '--font-inter',
