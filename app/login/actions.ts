@@ -1,34 +1,31 @@
 'use server';
 
+import { createClient } from '@/utils/supabase/server';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { createClient } from '@/utils/supabase/server';
-
 export async function signInWithMagicLink(formData: FormData) {
-  const supabase = await createClient();
   const email = formData.get('email') as string;
+  const supabase = await createClient();
 
-  // Basic email validation
-  if (!email || !email.includes('@')) {
-    redirect('/login?error=invalid-email');
+  // TODO: Add email validation?
+  if (!email) {
+    return redirect('/login?error=invalid-email');
   }
+
+  const headersList = await headers();
+  const origin = headersList.get('origin');
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: 'http://localhost:6311/auth/confirm',
+      emailRedirectTo: `${origin}/auth/confirm`,
     },
   });
+
   if (error) {
-    // Handle specific error types
-    if (error.message.includes('rate limit')) {
-      redirect('/login?error=rate-limited');
-    } else if (error.message.includes('invalid email')) {
-      redirect('/login?error=invalid-email');
-    } else {
-      redirect('/login?error=unknown');
-    }
+    console.error('Error sending magic link:', error);
+    return redirect('/login?error=unknown');
   }
 
-  // Success - redirect to a page that shows the magic link was sent
-  redirect('/login?success=true');
+  return redirect('/login?success=true');
 }
