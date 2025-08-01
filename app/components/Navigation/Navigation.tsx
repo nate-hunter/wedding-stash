@@ -2,12 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-
-import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
 
+import { createClient } from '@/utils/supabase/client';
+
 import Button from '@/components/Button';
-import { UploadIcon } from '@/components/Icon';
 
 export default function Navigation() {
   const [user, setUser] = useState<User | null>(null);
@@ -47,27 +46,11 @@ export default function Navigation() {
         <div className='nav-links'>
           {user ? (
             <>
-              <Button
-                href='/gallery/upload'
-                asLink
-                // variant='sunset'
-                // bg='inverted'
-                // isBordered
-                width='fit'
-              >
-                <UploadIcon size={15} />
-                Supabase Photos
-              </Button>
-              <Button href='/google-upload' asLink variant='sunset' width='fit'>
+              {/* <Button href='/google-upload' asLink variant='sunset' width='fit'>
                 <UploadIcon size={15} />
                 Google Photos
-              </Button>
-              {/* <Link href='/gallery' className='nav-link'>
-                Gallery
-              </Link> */}
-              {/* <Link href='/account' className='nav-link'>
-                Account
-              </Link> */}
+              </Button> */}
+              {/* AUTHENTICATION */}
               <form action='/auth/signout' method='post' className='nav-form'>
                 <Button type='submit' bg='inverted' width='fit'>
                   Sign Out
