@@ -148,8 +148,34 @@ function UploadForm({
     setSelectedFiles(files);
     setValidationErrors([]);
     setFilePreviews([]);
+    setError('');
+    setMessage('');
 
     if (files.length > 0) {
+      // Check Google Photos API limits (50 files max)
+      if (files.length > 50) {
+        setError(
+          'Maximum 50 files allowed per upload (Google Photos API limit). Please select fewer files.',
+        );
+        return;
+      }
+
+      // Check total payload size and provide helpful guidance
+      const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+      const totalSizeMB = totalSize / (1024 * 1024);
+
+      if (totalSizeMB > 20) {
+        setError(
+          `Selected files are ${totalSizeMB.toFixed(
+            1,
+          )}MB total. Large uploads may take longer but should work fine.`,
+        );
+      } else if (files.length > 10) {
+        setMessage(
+          `Uploading ${files.length} files. Large batches will be processed in chunks for optimal performance.`,
+        );
+      }
+
       // Validate files
       const errors = files.map((file) => validateFile(file)).flat();
       setValidationErrors(errors);
@@ -259,6 +285,13 @@ function UploadForm({
           setValidationErrors([data.error.message]);
         } else if (data.error?.code === 'AUTH_ERROR') {
           setError('Authentication failed. Please log in again.');
+        } else if (data.error?.code === 'PAYLOAD_TOO_LARGE') {
+          setError(
+            data.error.message +
+              ' This is rare with our chunked processing, but try uploading smaller batches if it persists.',
+          );
+        } else if (data.error?.code === 'TOO_MANY_FILES') {
+          setError(data.error.message + ' The maximum is 50 files per upload.');
         }
 
         console.error('Upload error:', data.error || data);

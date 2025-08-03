@@ -73,5 +73,8 @@ next-env.d.ts
 /**/*.sb.*
 
 # Cursor
-.cursor
+.cursor/
 .cursor-prompts/
+
+# Markdown files for local dev
+.docs/

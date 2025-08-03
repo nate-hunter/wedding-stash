@@ -9,6 +9,9 @@ import type { User, SupabaseClient } from '@supabase/supabase-js';
 // Constants and configuration
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for photos
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB for videos
+const MAX_FILES_PER_BATCH = 50; // Google Photos API limit
+const MAX_FILES_PER_CHUNK = 5; // Vercel-friendly chunk size to avoid payload issues
+const MAX_TOTAL_PAYLOAD_SIZE = 4 * 1024 * 1024; // 4MB safe limit for Vercel
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 const ALLOWED_VIDEO_TYPES = [
   'video/mp4',
@@ -33,11 +36,9 @@ const ALLOWED_EXTENSIONS = [
 ];
 
 // Type definitions
-interface GoogleAlbum {
-  id: string;
-  title: string;
-  productUrl: string;
-  isWriteable?: boolean;
+interface ValidationResult {
+  isValid: boolean;
+  error?: string;
 }
 
 interface UploadResponse {
@@ -91,7 +92,7 @@ function validateEnvironment(): void {
 }
 
 // File validation
-function validateFile(file: File, filename: string): { isValid: boolean; error?: string } {
+function validateFile(file: File, filename: string): ValidationResult {
   // Check file size
   const maxSize = ALLOWED_VIDEO_TYPES.includes(file.type) ? MAX_VIDEO_SIZE : MAX_FILE_SIZE;
   if (file.size > maxSize) {
@@ -125,7 +126,10 @@ function validateFile(file: File, filename: string): { isValid: boolean; error?:
 }
 
 // Create a new album in Google Photos
-async function createGoogleAlbum(title: string, accessToken: string): Promise<GoogleAlbum> {
+async function createGoogleAlbum(
+  title: string,
+  accessToken: string,
+): Promise<{ id: string; title: string; productUrl: string; isWriteable?: boolean }> {
   const createAlbumUrl = 'https://photoslibrary.googleapis.com/v1/albums';
   const response = await fetch(createAlbumUrl, {
     method: 'POST',
@@ -335,8 +339,28 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
       );
     }
 
-    // Parse form data
-    const formData = await request.formData();
+    // Parse form data with error handling for large payloads
+    let formData: FormData;
+    try {
+      formData = await request.formData();
+    } catch (parseError) {
+      // Handle non-JSON responses from hosting platform payload limits
+      const errorMessage =
+        parseError instanceof Error ? parseError.message : 'Unknown parsing error';
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Request payload too large',
+          error: {
+            code: 'PAYLOAD_TOO_LARGE',
+            message:
+              'The request payload exceeds the server limit. Please try uploading fewer files at once.',
+            details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+          },
+        },
+        { status: 413 },
+      );
+    }
 
     // Extract files and form data
     const mediaFiles = formData.getAll('media') as File[];
@@ -356,6 +380,26 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
         { status: 400 },
       );
     }
+
+    // Check Google Photos API limits (50 files max)
+    if (mediaFiles.length > MAX_FILES_PER_BATCH) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Too many files',
+          error: {
+            code: 'TOO_MANY_FILES',
+            message: `Maximum ${MAX_FILES_PER_BATCH} files allowed per upload (Google Photos API limit).`,
+          },
+        },
+        { status: 400 },
+      );
+    }
+
+    // Estimate payload size to determine if we need chunked processing
+    const totalPayloadSize = mediaFiles.reduce((sum, file) => sum + file.size, 0);
+    const needsChunking =
+      totalPayloadSize > MAX_TOTAL_PAYLOAD_SIZE || mediaFiles.length > MAX_FILES_PER_CHUNK;
 
     // Validate all files
     const validationErrors: string[] = [];
@@ -387,24 +431,55 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
     // Get or create album for the user
     const albumId = await getOrCreateAlbum(supabase, user, accessToken);
 
-    // Upload all files to Google Photos and collect upload tokens
-    const uploadPromises = mediaFiles.map(async (file, index) => {
-      const fileContent = await file.arrayBuffer();
-      const uploadToken = await uploadToGooglePhotos(
-        fileContent,
-        file.type || 'application/octet-stream',
-        accessToken,
-      );
+    // Process files efficiently based on payload size and chunking needs
+    const uploadResults: Array<{
+      uploadToken: string;
+      filename: string;
+      originalFile: File;
+    }> = [];
 
-      const filename = filenamePrefix || file.name || `file_${index + 1}`;
-      return {
-        uploadToken,
-        filename,
-        originalFile: file,
-      };
-    });
+    if (needsChunking) {
+      // Process files in smaller chunks to avoid Vercel payload limits
+      for (let chunkStart = 0; chunkStart < mediaFiles.length; chunkStart += MAX_FILES_PER_CHUNK) {
+        const chunk = mediaFiles.slice(chunkStart, chunkStart + MAX_FILES_PER_CHUNK);
+        
+        for (const file of chunk) {
+          const filename = filenamePrefix || file.name || `file_${uploadResults.length + 1}`;
+          const fileContent = await file.arrayBuffer();
+          const uploadToken = await uploadToGooglePhotos(
+            fileContent,
+            file.type || 'application/octet-stream',
+            accessToken,
+          );
+          
+          uploadResults.push({
+            uploadToken,
+            filename,
+            originalFile: file,
+          });
+        }
+      }
+    } else {
+      // Process all files at once for smaller payloads (more efficient)
+      const uploadPromises = mediaFiles.map(async (file, index) => {
+        const fileContent = await file.arrayBuffer();
+        const uploadToken = await uploadToGooglePhotos(
+          fileContent,
+          file.type || 'application/octet-stream',
+          accessToken,
+        );
 
-    const uploadResults = await Promise.all(uploadPromises);
+        const filename = filenamePrefix || file.name || `file_${index + 1}`;
+        return {
+          uploadToken,
+          filename,
+          originalFile: file,
+        };
+      });
+
+      const results = await Promise.all(uploadPromises);
+      uploadResults.push(...results);
+    }
 
     // Create media items using batch API
     const result = await createBatchMediaItems(uploadResults, description, albumId, accessToken);
@@ -434,20 +509,39 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
       },
     });
   } catch (error: unknown) {
+    // Improved error handling for non-JSON responses
+    let errorMessage = 'An unexpected error occurred';
+    let errorCode = 'UPLOAD_ERROR';
+    let statusCode = 500;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      // Check if this might be a payload size error
+      if (
+        error.message.includes('Entity Too Large') ||
+        error.message.includes('payload') ||
+        error.message.includes('too large')
+      ) {
+        errorCode = 'PAYLOAD_TOO_LARGE';
+        errorMessage = 'Request payload too large. Please try uploading fewer files at once.';
+        statusCode = 413;
+      }
+    }
+
     return NextResponse.json(
       {
         success: false,
         message: 'Upload failed',
         error: {
-          code: 'UPLOAD_ERROR',
-          message: error instanceof Error ? error.message : 'An unexpected error occurred',
+          code: errorCode,
+          message: errorMessage,
           details:
             process.env.NODE_ENV === 'development' && error instanceof Error
               ? error.stack
               : undefined,
         },
       },
-      { status: 500 },
+      { status: statusCode },
     );
   }
 }
