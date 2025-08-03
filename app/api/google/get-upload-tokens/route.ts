@@ -62,7 +62,7 @@ async function getOrCreateAlbum(
     .single();
 
   const userEmail = profile?.email || user.email || 'user';
-  const timestamp = new Date().toISOString().replace('T', '__').substring(0, 19);
+  const timestamp = new Date().toISOString().replace('T', '__').substring(0, 20);
   const albumTitle = `${userEmail}__${timestamp}`;
 
   // Create new user-specific album
