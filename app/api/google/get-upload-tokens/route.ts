@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { SupabaseClient, User } from '@supabase/supabase-js';
+import { getGoogleAccessToken } from '@/utils/google-auth';
 
 interface UploadTokenRequest {
   files: Array<{
@@ -62,7 +63,7 @@ async function getOrCreateAlbum(
   // Check if user already has an album
   const { data: existingAlbum } = await supabase
     .from('google_photos_albums')
-    .select('album_id')
+    .select('album_id, album_title')
     .eq('user_id', user.id)
     .single();
 
@@ -70,7 +71,18 @@ async function getOrCreateAlbum(
     return existingAlbum.album_id;
   }
 
-  // Create new album
+  // Get user's email from profile
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('email')
+    .eq('id', user.id)
+    .single();
+
+  const userEmail = profile?.email || user.email || 'user';
+  const timestamp = new Date().toISOString().replace('T', '__').substring(0, 19);
+  const albumTitle = `${userEmail}__${timestamp}`;
+
+  // Create new user-specific album
   const albumResponse = await fetch('https://photoslibrary.googleapis.com/v1/albums', {
     method: 'POST',
     headers: {
@@ -79,7 +91,7 @@ async function getOrCreateAlbum(
     },
     body: JSON.stringify({
       album: {
-        title: 'Wedding Photos',
+        title: albumTitle,
       },
     }),
   });
@@ -91,11 +103,11 @@ async function getOrCreateAlbum(
   const albumData = await albumResponse.json();
   const albumId = albumData.id;
 
-  // Save album to database
+  // Save user-specific album to database
   await supabase.from('google_photos_albums').insert({
     user_id: user.id,
     album_id: albumId,
-    album_title: 'Wedding Photos',
+    album_title: albumTitle,
   });
 
   return albumId;
@@ -121,24 +133,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadTok
       );
     }
 
-    // Get user's Google access token
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('google_access_token')
-      .eq('id', user.id)
-      .single();
-
-    const accessToken = profile?.google_access_token;
-    if (!accessToken) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Google Photos access not configured',
-          error: { code: 'AUTH_ERROR', message: 'Google Photos access token required' },
-        },
-        { status: 401 },
-      );
-    }
+    // Get Google access token using refresh token
+    const accessToken = await getGoogleAccessToken();
 
     const body: UploadTokenRequest = await request.json();
     const { files } = body;
