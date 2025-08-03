@@ -8,11 +8,15 @@ interface UploadResponse {
   success: boolean;
   message: string;
   data?: {
-    mediaItemId?: string;
-    filename: string;
-    fileSize: number;
+    filesUploaded: number;
+    totalSize: number;
     uploadTime: string;
-    mimeType: string;
+    mediaItems: Array<{
+      mediaItemId?: string;
+      filename: string;
+      fileSize: number;
+      mimeType: string;
+    }>;
   };
   error?: {
     code: string;
@@ -47,56 +51,26 @@ const ALLOWED_EXTENSIONS = [
   '.webm',
 ];
 
-interface FormData {
-  title: string;
-  description: string;
-  filename: string;
-}
+// Remove unused FormData interface since we no longer have persistent form fields
 
 function UploadForm() {
-  // State management
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
-  const [filename, setFilename] = useState<string>('');
+  // State management - Updated to handle multiple files
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [message, setMessage] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [filePreview, setFilePreview] = useState<string>('');
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
 
   // Refs for accessibility
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Load form data from localStorage on component mount
-  React.useEffect(() => {
-    const savedFormData = localStorage.getItem('uploadFormData');
-    if (savedFormData) {
-      try {
-        const parsed: FormData = JSON.parse(savedFormData);
-        setTitle(parsed.title || '');
-        setDescription(parsed.description || '');
-        setFilename(parsed.filename || '');
-      } catch (error) {
-        console.error('Error loading saved form data:', error);
-      }
-    }
-  }, []);
+  // Removed localStorage logic since we no longer have persistent form fields
 
-  // Save form data to localStorage when it changes
-  const saveFormData = () => {
-    const formData: FormData = { title, description, filename };
-    localStorage.setItem('uploadFormData', JSON.stringify(formData));
-  };
-
-  // Input sanitization
-  const sanitizeInput = (input: string): string => {
-    return input.replace(/[<>]/g, '').trim();
-  };
-
-  // Client-side file validation
+  // Client-side file validation - Updated to validate individual files
   const validateFile = (file: File): string[] => {
     const errors: string[] = [];
 
@@ -127,56 +101,89 @@ function UploadForm() {
     return errors;
   };
 
-  // Generate file preview
-  const generateFilePreview = (file: File) => {
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFilePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setFilePreview('');
-    }
+  // Generate file previews for multiple files
+  const generateFilePreviews = (files: File[]) => {
+    const previews: string[] = [];
+    let loadedCount = 0;
+
+    files.forEach((file, index) => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          previews[index] = reader.result as string;
+          loadedCount++;
+
+          // Update state when all previews are loaded
+          if (loadedCount === files.length) {
+            setFilePreviews([...previews]);
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        previews[index] = '';
+        loadedCount++;
+
+        // Update state when all previews are processed
+        if (loadedCount === files.length) {
+          setFilePreviews([...previews]);
+        }
+      }
+    });
   };
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
-    const file = event.target.files ? event.target.files[0] : null;
-    setSelectedFile(file);
+  // Handle file selection from both input and drag-and-drop
+  const handleFiles = (files: File[]): void => {
+    setSelectedFiles(files);
     setValidationErrors([]);
-    setFilePreview('');
+    setFilePreviews([]);
 
-    if (file) {
-      // Validate file
-      const errors = validateFile(file);
+    if (files.length > 0) {
+      // Validate files
+      const errors = files.map((file) => validateFile(file)).flat();
       setValidationErrors(errors);
 
       if (errors.length === 0) {
-        // Pre-fill filename with original file name
-        setFilename(file.name);
-        generateFilePreview(file);
+        // Generate previews for all selected files
+        generateFilePreviews(files);
       }
     }
   };
 
-  const handleInputChange = (field: keyof FormData, value: string) => {
-    const sanitizedValue = sanitizeInput(value);
-
-    switch (field) {
-      case 'title':
-        setTitle(sanitizedValue);
-        break;
-      case 'description':
-        setDescription(sanitizedValue);
-        break;
-      case 'filename':
-        setFilename(sanitizedValue);
-        break;
-    }
-
-    // Save to localStorage
-    saveFormData();
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    handleFiles(files);
   };
+
+  // Drag and drop handlers
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(false);
+
+    const files = Array.from(event.dataTransfer.files);
+    // Filter to only allow media files
+    const mediaFiles = files.filter(
+      (file) => file.type.startsWith('image/') || file.type.startsWith('video/'),
+    );
+
+    if (mediaFiles.length > 0) {
+      handleFiles(mediaFiles);
+    }
+  };
+
+  // Removed handleInputChange since we no longer have form inputs to handle
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
@@ -186,14 +193,14 @@ function UploadForm() {
     setIsLoading(true);
     setUploadProgress(0);
 
-    if (!selectedFile) {
-      setError('Please select a file to upload.');
+    if (selectedFiles.length === 0) {
+      setError('Please select files to upload.');
       setIsLoading(false);
       return;
     }
 
-    // Re-validate file before upload
-    const errors = validateFile(selectedFile);
+    // Re-validate files before upload
+    const errors = selectedFiles.map((file) => validateFile(file)).flat();
     if (errors.length > 0) {
       setValidationErrors(errors);
       setError('File validation failed. Please check the file requirements.');
@@ -205,10 +212,9 @@ function UploadForm() {
     // No validation needed for title since it's optional
 
     const formData = new FormData();
-    formData.append('media', selectedFile);
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('filename', filename || selectedFile.name);
+    selectedFiles.forEach((file) => {
+      formData.append('media', file);
+    });
 
     try {
       const response = await fetch(API_ROUTES.google.uploadMedia, {
@@ -221,14 +227,9 @@ function UploadForm() {
       if (response.ok && data.success) {
         setMessage(data.message || 'Upload successful!');
         // Clear form after successful upload
-        setSelectedFile(null);
-        setTitle('');
-        setDescription('');
-        setFilename('');
-        setFilePreview('');
+        setSelectedFiles([]);
+        setFilePreviews([]);
         setUploadProgress(0);
-        // Clear saved form data
-        localStorage.removeItem('uploadFormData');
         // Reset file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -258,18 +259,14 @@ function UploadForm() {
   };
 
   const clearForm = () => {
-    setSelectedFile(null);
-    setTitle('');
-    setDescription('');
-    setFilename('');
-    setFilePreview('');
+    setSelectedFiles([]);
+    setFilePreviews([]);
     setMessage('');
     setError('');
     setValidationErrors([]);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    localStorage.removeItem('uploadFormData');
   };
 
   const formatFileSize = (bytes: number): string => {
@@ -285,41 +282,103 @@ function UploadForm() {
       <h2 className='text-2xl font-bold mb-4 text-center text-gray-800'>Upload Wedding Media</h2>
 
       <form ref={formRef} onSubmit={handleSubmit} className='space-y-4' noValidate>
-        {/* File Input */}
+        {/* File Input with Drag and Drop */}
         <div>
-          <label htmlFor='mediaFile' className='block text-sm font-medium text-gray-700'>
-            Select Photo/Video:
+          <label htmlFor='mediaFile' className='block text-sm font-medium text-gray-700 mb-2'>
+            Select Photos/Videos:
           </label>
-          <input
-            ref={fileInputRef}
-            type='file'
-            id='mediaFile'
-            onChange={handleFileChange}
-            className='mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer'
-            accept='image/*, video/*'
-            aria-describedby='file-help file-errors'
-            aria-invalid={validationErrors.length > 0}
-          />
-          <div id='file-help' className='mt-1 text-sm text-gray-500'>
+
+          {/* Drag and Drop Zone */}
+          <div
+            className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+              isDragOver
+                ? 'border-indigo-400 bg-indigo-50'
+                : validationErrors.length > 0
+                ? 'border-red-300 bg-red-50'
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className='text-center'>
+              <svg
+                className={`mx-auto h-12 w-12 ${isDragOver ? 'text-indigo-400' : 'text-gray-400'}`}
+                stroke='currentColor'
+                fill='none'
+                viewBox='0 0 48 48'
+                aria-hidden='true'
+              >
+                <path
+                  d='M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02'
+                  strokeWidth={2}
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                />
+              </svg>
+              <div className='mt-4'>
+                <p className={`text-sm ${isDragOver ? 'text-indigo-600' : 'text-gray-600'}`}>
+                  {isDragOver ? 'Drop files here' : 'Drag and drop files here, or'}
+                </p>
+                <button
+                  type='button'
+                  className='mt-1 text-sm text-indigo-600 hover:text-indigo-500 font-medium'
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  click to select files
+                </button>
+              </div>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type='file'
+              id='mediaFile'
+              onChange={handleFileChange}
+              className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
+              accept='image/*, video/*'
+              aria-describedby='file-help file-errors'
+              aria-invalid={validationErrors.length > 0}
+              multiple
+            />
+          </div>
+
+          <div id='file-help' className='mt-2 text-sm text-gray-500'>
             Maximum file size: {formatFileSize(MAX_FILE_SIZE)} for photos,{' '}
             {formatFileSize(MAX_VIDEO_SIZE)} for videos
           </div>
-          {selectedFile && (
-            <div className='mt-2 text-sm text-gray-600'>
-              Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
+          {selectedFiles.length > 0 && (
+            <div className='mt-2'>
+              <div className='text-sm text-gray-600 mb-2'>
+                Selected: {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''}
+              </div>
+              <div className='space-y-1'>
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className='text-xs text-gray-500 bg-gray-50 p-2 rounded'>
+                    {file.name} ({formatFileSize(file.size)})
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
         {/* File Preview */}
-        {filePreview && (
+        {filePreviews.length > 0 && filePreviews.some((preview) => preview) && (
           <div className='mt-2'>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>Preview:</label>
-            <img
-              src={filePreview}
-              alt='File preview'
-              className='max-w-full h-32 object-cover rounded border'
-            />
+            <label className='block text-sm font-medium text-gray-700 mb-2'>Image Preview:</label>
+            <div className='grid grid-cols-3 gap-2'>
+              {filePreviews.map((preview, index) =>
+                preview ? (
+                  <img
+                    key={index}
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    className='w-full h-20 object-cover rounded border'
+                  />
+                ) : null,
+              )}
+            </div>
           </div>
         )}
 
@@ -334,73 +393,6 @@ function UploadForm() {
             </ul>
           </div>
         )}
-
-        {/* Title Input */}
-        <div>
-          <label htmlFor='title' className='block text-sm font-medium text-gray-700'>
-            Title:
-          </label>
-          <input
-            type='text'
-            id='title'
-            value={title}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              handleInputChange('title', e.target.value)
-            }
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2'
-            placeholder='A lovely moment...'
-            maxLength={100}
-            aria-describedby='title-help'
-          />
-          <div id='title-help' className='mt-1 text-sm text-gray-500'>
-            Optional. Maximum 100 characters.
-          </div>
-        </div>
-
-        {/* Filename Input */}
-        <div>
-          <label htmlFor='filename' className='block text-sm font-medium text-gray-700'>
-            Filename (in Google Photos):
-          </label>
-          <input
-            type='text'
-            id='filename'
-            value={filename}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              handleInputChange('filename', e.target.value)
-            }
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2'
-            placeholder='my-wedding-photo.jpg'
-            maxLength={255}
-            pattern='^[a-zA-Z0-9._-]+$'
-            title='Only letters, numbers, dots, underscores, and hyphens allowed'
-          />
-          <div className='mt-1 text-sm text-gray-500'>
-            Optional. Only letters, numbers, dots, underscores, and hyphens allowed.
-          </div>
-        </div>
-
-        {/* Description Input */}
-        <div>
-          <label htmlFor='description' className='block text-sm font-medium text-gray-700'>
-            Description:
-          </label>
-          <textarea
-            id='description'
-            value={description}
-            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-              handleInputChange('description', e.target.value)
-            }
-            rows={3}
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2'
-            placeholder='Details about this photo/video...'
-            maxLength={500}
-            aria-describedby='description-help'
-          />
-          <div id='description-help' className='mt-1 text-sm text-gray-500'>
-            Optional. Maximum 500 characters. {description.length}/500
-          </div>
-        </div>
 
         {/* Upload Progress */}
         {isLoading && uploadProgress > 0 && (
@@ -429,7 +421,7 @@ function UploadForm() {
                 ? 'bg-indigo-400 cursor-not-allowed'
                 : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
             }`}
-            disabled={isLoading || validationErrors.length > 0}
+            disabled={isLoading || validationErrors.length > 0 || selectedFiles.length === 0}
             aria-describedby='submit-help'
           >
             {isLoading ? (
@@ -455,10 +447,12 @@ function UploadForm() {
                     d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
                   />
                 </svg>
-                Uploading...
+                Uploading {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''}...
               </>
             ) : (
-              'Upload to Google Photos'
+              `Upload ${selectedFiles.length || 0} file${
+                selectedFiles.length !== 1 ? 's' : ''
+              } to Google Photos`
             )}
           </button>
 
