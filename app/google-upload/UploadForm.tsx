@@ -53,7 +53,19 @@ const ALLOWED_EXTENSIONS = [
 
 // Remove unused FormData interface since we no longer have persistent form fields
 
-function UploadForm() {
+interface UploadFormProps {
+  onUploadStart?: () => void;
+  onUploadEnd?: () => void;
+  onUploadSuccess?: () => void;
+  isModal?: boolean;
+}
+
+function UploadForm({
+  onUploadStart,
+  onUploadEnd,
+  onUploadSuccess,
+  isModal = false,
+}: UploadFormProps) {
   // State management - Updated to handle multiple files
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [message, setMessage] = useState<string>('');
@@ -192,10 +204,12 @@ function UploadForm() {
     setValidationErrors([]);
     setIsLoading(true);
     setUploadProgress(0);
+    onUploadStart?.();
 
     if (selectedFiles.length === 0) {
       setError('Please select files to upload.');
       setIsLoading(false);
+      onUploadEnd?.();
       return;
     }
 
@@ -234,6 +248,7 @@ function UploadForm() {
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
+        onUploadSuccess?.();
       } else {
         // Handle API error responses
         const errorMessage = data.error?.message || data.message || 'An unknown error occurred.';
@@ -255,6 +270,7 @@ function UploadForm() {
     } finally {
       setIsLoading(false);
       setUploadProgress(0);
+      onUploadEnd?.();
     }
   };
 
@@ -278,8 +294,14 @@ function UploadForm() {
   };
 
   return (
-    <div className='max-w-md mx-auto p-4 bg-white rounded-lg shadow-md mt-10 font-inter'>
-      <h2 className='text-2xl font-bold mb-4 text-center text-gray-800'>Upload Wedding Media</h2>
+    <div
+      className={`${
+        isModal ? 'p-4' : 'max-w-md mx-auto p-4 bg-white rounded-lg shadow-md mt-10'
+      } font-inter`}
+    >
+      {!isModal && (
+        <h2 className='text-2xl font-bold mb-4 text-center text-gray-800'>Upload Wedding Media</h2>
+      )}
 
       <form ref={formRef} onSubmit={handleSubmit} className='space-y-4' noValidate>
         {/* File Input with Drag and Drop */}

@@ -84,7 +84,7 @@ export default function GalleryPage() {
       <div className='max-w-7xl mx-auto px-sp3 py-sp3'>
         <div className='flex justify-between items-center mb-sp1'>
           <h2 className='text-2xl font-bold'>My Gallery</h2>
-          <UploadButton user={user} onUploadComplete={handleUploadComplete} />
+          <UploadButton onUploadComplete={handleUploadComplete} />
         </div>
 
         <div className='mb-6'>
@@ -113,7 +113,9 @@ export default function GalleryPage() {
                 </svg>
               </div>
               <h3 className='text-sm font-medium text-gray-900'>No photos yet</h3>
-              <p className='mt-1 text-sm text-gray-500'>Get started by uploading your first photo.</p>
+              <p className='mt-1 text-sm text-gray-500'>
+                Get started by uploading your first photo.
+              </p>
             </div>
           ) : (
             <PhotoGrid photos={photos} />
