@@ -242,22 +242,22 @@ function UploadForm({
       }
 
       const tokenData = await tokenResponse.json();
-      const { tokens, albumId } = tokenData.data;
+      const { uploadUrl, accessToken, albumId } = tokenData.data;
 
       // Step 2: Upload files directly to Google Photos (bypasses Vercel payload limits)
       const uploadedTokens: Array<{ filename: string; uploadToken: string }> = [];
 
       for (let i = 0; i < selectedFiles.length; i++) {
         const file = selectedFiles[i];
-        const token = tokens[i];
 
         setMessage(`Uploading ${file.name} (${i + 1} of ${selectedFiles.length})...`);
 
         try {
           // Direct upload to Google Photos
-          const uploadResponse = await fetch(token.uploadUrl, {
+          const uploadResponse = await fetch(uploadUrl, {
             method: 'POST',
             headers: {
+              Authorization: `Bearer ${accessToken}`,
               'Content-Type': 'application/octet-stream',
               'X-Goog-Upload-Content-Type': file.type || 'application/octet-stream',
               'X-Goog-Upload-Protocol': 'raw',
@@ -275,7 +275,7 @@ function UploadForm({
           const uploadToken = await uploadResponse.text();
           uploadedTokens.push({
             filename: file.name,
-            uploadToken: uploadToken.trim() || token.uploadToken,
+            uploadToken: uploadToken.trim(),
           });
 
           const progress = Math.round(((i + 1) / selectedFiles.length) * 80); // Reserve 20% for completion

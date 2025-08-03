@@ -15,12 +15,10 @@ interface UploadTokenResponse {
   success: boolean;
   message: string;
   data?: {
-    tokens: Array<{
-      filename: string;
-      uploadToken: string;
-      uploadUrl: string;
-    }>;
+    uploadUrl: string;
+    accessToken: string;
     albumId: string;
+    fileCount: number;
   };
   error?: {
     code: string;
@@ -28,30 +26,15 @@ interface UploadTokenResponse {
   };
 }
 
-async function uploadToGooglePhotos(
-  mimeType: string,
-  accessToken: string,
-): Promise<{ uploadToken: string; uploadUrl: string }> {
-  const uploadResponse = await fetch('https://photoslibrary.googleapis.com/v1/uploads', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/octet-stream',
-      'X-Goog-Upload-Content-Type': mimeType,
-      'X-Goog-Upload-Protocol': 'raw',
-    },
-    body: '', // Empty body to get upload token
-  });
-
-  if (!uploadResponse.ok) {
-    const errorText = await uploadResponse.text();
-    throw new Error(`Google Photos upload token failed: ${uploadResponse.status} ${errorText}`);
-  }
-
-  const uploadToken = await uploadResponse.text();
+// Google Photos requires actual file content to generate upload tokens
+// So we'll return the upload URL and access token for client-side upload
+function getGooglePhotosUploadInfo(accessToken: string): {
+  uploadUrl: string;
+  accessToken: string;
+} {
   return {
-    uploadToken,
     uploadUrl: 'https://photoslibrary.googleapis.com/v1/uploads',
+    accessToken: accessToken,
   };
 }
 
@@ -153,24 +136,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadTok
     // Get or create album
     const albumId = await getOrCreateAlbum(supabase, user, accessToken);
 
-    // Generate upload tokens for each file
-    const tokens = await Promise.all(
-      files.map(async (file) => {
-        const { uploadToken, uploadUrl } = await uploadToGooglePhotos(file.mimeType, accessToken);
-        return {
-          filename: file.filename,
-          uploadToken,
-          uploadUrl,
-        };
-      }),
-    );
+    // Return upload info for client-side direct upload
+    const uploadInfo = getGooglePhotosUploadInfo(accessToken);
 
     return NextResponse.json({
       success: true,
-      message: `Generated ${tokens.length} upload token${tokens.length > 1 ? 's' : ''}`,
+      message: `Ready to upload ${files.length} file${files.length > 1 ? 's' : ''}`,
       data: {
-        tokens,
+        uploadUrl: uploadInfo.uploadUrl,
+        accessToken: uploadInfo.accessToken,
         albumId,
+        fileCount: files.length,
       },
     });
   } catch (error: unknown) {
