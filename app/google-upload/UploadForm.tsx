@@ -1,28 +1,13 @@
 'use client';
 
 import React, { useState, ChangeEvent, FormEvent, useRef } from 'react';
-import { API_ROUTES } from '@/utils/constants';
 
-// Type definitions for API responses
-interface UploadResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    filesUploaded: number;
-    totalSize: number;
-    uploadTime: string;
-    mediaItems: Array<{
-      mediaItemId?: string;
-      filename: string;
-      fileSize: number;
-      mimeType: string;
-    }>;
-  };
-  error?: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
+// Type definitions for uploaded media items
+interface MediaItem {
+  mediaItemId?: string;
+  filename?: string;
+  fileSize?: number;
+  mimeType?: string;
 }
 
 // File validation constants (matching API route)
@@ -160,19 +145,19 @@ function UploadForm({
         return;
       }
 
-      // Check total payload size and provide helpful guidance
+      // Provide helpful guidance about upload processing
       const totalSize = files.reduce((sum, file) => sum + file.size, 0);
       const totalSizeMB = totalSize / (1024 * 1024);
 
       if (totalSizeMB > 20) {
-        setError(
-          `Selected files are ${totalSizeMB.toFixed(
-            1,
-          )}MB total. Large uploads may take longer but should work fine.`,
-        );
-      } else if (files.length > 10) {
         setMessage(
-          `Uploading ${files.length} files. Large batches will be processed in chunks for optimal performance.`,
+          `Selected ${files.length} files (${totalSizeMB.toFixed(
+            1,
+          )}MB total). Large uploads will be processed in chunks automatically.`,
+        );
+      } else if (files.length > 5) {
+        setMessage(
+          `Selected ${files.length} files. Will be processed in multiple requests for optimal performance.`,
         );
       }
 
@@ -225,85 +210,140 @@ function UploadForm({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
-    setMessage('');
-    setError('');
-    setValidationErrors([]);
-    setIsLoading(true);
-    setUploadProgress(0);
-    onUploadStart?.();
 
     if (selectedFiles.length === 0) {
-      setError('Please select files to upload.');
-      setIsLoading(false);
-      onUploadEnd?.();
+      setError('Please select at least one file to upload.');
       return;
     }
 
-    // Re-validate files before upload
-    const errors = selectedFiles.map((file) => validateFile(file)).flat();
-    if (errors.length > 0) {
-      setValidationErrors(errors);
-      setError('File validation failed. Please check the file requirements.');
-      setIsLoading(false);
-      return;
+    setIsLoading(true);
+    setError('');
+    setMessage('');
+    setUploadProgress(0);
+
+    if (onUploadStart) {
+      onUploadStart();
     }
-
-    // Validate inputs (title is now optional)
-    // No validation needed for title since it's optional
-
-    const formData = new FormData();
-    selectedFiles.forEach((file) => {
-      formData.append('media', file);
-    });
 
     try {
-      const response = await fetch(API_ROUTES.google.uploadMedia, {
-        method: 'POST',
-        body: formData,
-      });
+      // Client-side chunking: Split files into chunks that stay under Vercel's 4MB limit
+      const MAX_CHUNK_SIZE = 3.5 * 1024 * 1024; // 3.5MB to be safe
+      const chunks: File[][] = [];
+      let currentChunk: File[] = [];
+      let currentChunkSize = 0;
 
-      const data: UploadResponse = await response.json();
+      for (const file of selectedFiles) {
+        // If adding this file would exceed the chunk size, start a new chunk
+        if (currentChunkSize + file.size > MAX_CHUNK_SIZE && currentChunk.length > 0) {
+          chunks.push(currentChunk);
+          currentChunk = [file];
+          currentChunkSize = file.size;
+        } else {
+          currentChunk.push(file);
+          currentChunkSize += file.size;
+        }
+      }
 
-      if (response.ok && data.success) {
-        setMessage(data.message || 'Upload successful!');
-        // Clear form after successful upload
+      // Add the last chunk if it has files
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
+      }
+
+      let uploadedFiles = 0;
+      const totalFiles = selectedFiles.length;
+      const allUploadedItems: MediaItem[] = [];
+
+      // Process each chunk as a separate HTTP request
+      for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+        const chunk = chunks[chunkIndex];
+        setMessage(
+          `Uploading chunk ${chunkIndex + 1} of ${chunks.length} (${chunk.length} files)...`,
+        );
+
+        const formData = new FormData();
+        chunk.forEach((file) => {
+          formData.append('media', file);
+        });
+
+        const response = await fetch('/api/google/upload-media', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          let data;
+          try {
+            data = JSON.parse(errorText);
+          } catch {
+            // Handle non-JSON error responses (like Vercel's 413 errors)
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          }
+          throw new Error(data.error?.message || data.message || 'Upload failed');
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          if (data.error?.code === 'AUTH_ERROR') {
+            setError('Authentication failed. Please log in again.');
+          } else if (data.error?.code === 'PAYLOAD_TOO_LARGE') {
+            setError('Chunk still too large. Try uploading fewer files at once.');
+          } else if (data.error?.code === 'TOO_MANY_FILES') {
+            setError(data.error.message + ' The maximum is 50 files per upload.');
+          } else {
+            setError(data.error?.message || data.message || 'Upload failed');
+          }
+          return;
+        }
+
+        // Collect uploaded items from this chunk
+        if (data.data?.mediaItems) {
+          allUploadedItems.push(...data.data.mediaItems);
+        }
+
+        uploadedFiles += chunk.length;
+        const progress = Math.round((uploadedFiles / totalFiles) * 100);
+        setUploadProgress(progress);
+      }
+
+      // Success - all chunks uploaded
+      setMessage(
+        `Successfully uploaded ${totalFiles} file${totalFiles > 1 ? 's' : ''} to Google Photos!`,
+      );
+      setUploadProgress(100);
+
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
+
+      // Reset form after successful upload
+      setTimeout(() => {
         setSelectedFiles([]);
         setFilePreviews([]);
+        setIsLoading(false);
         setUploadProgress(0);
-        // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+        if (onUploadEnd) {
+          onUploadEnd();
         }
-        onUploadSuccess?.();
+      }, 2000);
+    } catch (error) {
+      console.error('Upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+
+      // Handle Vercel's non-JSON 413 responses specifically
+      if (errorMessage.includes('413') || errorMessage.includes('Entity Too Large')) {
+        setError('Files too large for upload. Try selecting smaller files or fewer files at once.');
       } else {
-        // Handle API error responses
-        const errorMessage = data.error?.message || data.message || 'An unknown error occurred.';
         setError(errorMessage);
-
-        // Handle specific error codes
-        if (data.error?.code === 'VALIDATION_ERROR') {
-          setValidationErrors([data.error.message]);
-        } else if (data.error?.code === 'AUTH_ERROR') {
-          setError('Authentication failed. Please log in again.');
-        } else if (data.error?.code === 'PAYLOAD_TOO_LARGE') {
-          setError(
-            data.error.message +
-              ' This is rare with our chunked processing, but try uploading smaller batches if it persists.',
-          );
-        } else if (data.error?.code === 'TOO_MANY_FILES') {
-          setError(data.error.message + ' The maximum is 50 files per upload.');
-        }
-
-        console.error('Upload error:', data.error || data);
       }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to connect to the server.';
-      setError(errorMessage);
-      console.error('Network error:', err);
-    } finally {
+
       setIsLoading(false);
       setUploadProgress(0);
-      onUploadEnd?.();
+
+      if (onUploadEnd) {
+        onUploadEnd();
+      }
     }
   };
 

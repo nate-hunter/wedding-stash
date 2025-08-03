@@ -10,8 +10,6 @@ import type { User, SupabaseClient } from '@supabase/supabase-js';
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for photos
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB for videos
 const MAX_FILES_PER_BATCH = 50; // Google Photos API limit
-const MAX_FILES_PER_CHUNK = 5; // Vercel-friendly chunk size to avoid payload issues
-const MAX_TOTAL_PAYLOAD_SIZE = 4 * 1024 * 1024; // 4MB safe limit for Vercel
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 const ALLOWED_VIDEO_TYPES = [
   'video/mp4',
@@ -396,10 +394,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
       );
     }
 
-    // Estimate payload size to determine if we need chunked processing
-    const totalPayloadSize = mediaFiles.reduce((sum, file) => sum + file.size, 0);
-    const needsChunking =
-      totalPayloadSize > MAX_TOTAL_PAYLOAD_SIZE || mediaFiles.length > MAX_FILES_PER_CHUNK;
+    // Note: Client-side chunking ensures we stay within Vercel's payload limits
 
     // Validate all files
     const validationErrors: string[] = [];
@@ -431,55 +426,24 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
     // Get or create album for the user
     const albumId = await getOrCreateAlbum(supabase, user, accessToken);
 
-    // Process files efficiently based on payload size and chunking needs
-    const uploadResults: Array<{
-      uploadToken: string;
-      filename: string;
-      originalFile: File;
-    }> = [];
+    // Process all files in parallel (client-side chunking ensures reasonable payload sizes)
+    const uploadPromises = mediaFiles.map(async (file, index) => {
+      const fileContent = await file.arrayBuffer();
+      const uploadToken = await uploadToGooglePhotos(
+        fileContent,
+        file.type || 'application/octet-stream',
+        accessToken,
+      );
 
-    if (needsChunking) {
-      // Process files in smaller chunks to avoid Vercel payload limits
-      for (let chunkStart = 0; chunkStart < mediaFiles.length; chunkStart += MAX_FILES_PER_CHUNK) {
-        const chunk = mediaFiles.slice(chunkStart, chunkStart + MAX_FILES_PER_CHUNK);
-        
-        for (const file of chunk) {
-          const filename = filenamePrefix || file.name || `file_${uploadResults.length + 1}`;
-          const fileContent = await file.arrayBuffer();
-          const uploadToken = await uploadToGooglePhotos(
-            fileContent,
-            file.type || 'application/octet-stream',
-            accessToken,
-          );
-          
-          uploadResults.push({
-            uploadToken,
-            filename,
-            originalFile: file,
-          });
-        }
-      }
-    } else {
-      // Process all files at once for smaller payloads (more efficient)
-      const uploadPromises = mediaFiles.map(async (file, index) => {
-        const fileContent = await file.arrayBuffer();
-        const uploadToken = await uploadToGooglePhotos(
-          fileContent,
-          file.type || 'application/octet-stream',
-          accessToken,
-        );
+      const filename = filenamePrefix || file.name || `file_${index + 1}`;
+      return {
+        uploadToken,
+        filename,
+        originalFile: file,
+      };
+    });
 
-        const filename = filenamePrefix || file.name || `file_${index + 1}`;
-        return {
-          uploadToken,
-          filename,
-          originalFile: file,
-        };
-      });
-
-      const results = await Promise.all(uploadPromises);
-      uploadResults.push(...results);
-    }
+    const uploadResults = await Promise.all(uploadPromises);
 
     // Create media items using batch API
     const result = await createBatchMediaItems(uploadResults, description, albumId, accessToken);
