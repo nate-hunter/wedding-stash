@@ -2,13 +2,7 @@
 
 import React, { useState, ChangeEvent, FormEvent, useRef } from 'react';
 
-// Type definitions for uploaded media items
-interface MediaItem {
-  mediaItemId?: string;
-  filename?: string;
-  fileSize?: number;
-  mimeType?: string;
-}
+// Direct upload implementation - no local type definitions needed
 
 // File validation constants (matching API route)
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB for photos
@@ -145,19 +139,19 @@ function UploadForm({
         return;
       }
 
-      // Provide helpful guidance about upload processing
+      // Provide helpful guidance about direct upload
       const totalSize = files.reduce((sum, file) => sum + file.size, 0);
       const totalSizeMB = totalSize / (1024 * 1024);
 
-      if (totalSizeMB > 20) {
+      if (totalSizeMB > 100) {
         setMessage(
           `Selected ${files.length} files (${totalSizeMB.toFixed(
             1,
-          )}MB total). Large uploads will be processed in chunks automatically.`,
+          )}MB total). Large files will be uploaded directly to Google Photos for optimal performance.`,
         );
-      } else if (files.length > 5) {
+      } else if (files.length > 10) {
         setMessage(
-          `Selected ${files.length} files. Will be processed in multiple requests for optimal performance.`,
+          `Selected ${files.length} files. Each will be uploaded directly to Google Photos without size limits.`,
         );
       }
 
@@ -226,90 +220,104 @@ function UploadForm({
     }
 
     try {
-      // Client-side chunking: Split files into chunks that stay under Vercel's 4MB limit
-      const MAX_CHUNK_SIZE = 3.5 * 1024 * 1024; // 3.5MB to be safe
-      const chunks: File[][] = [];
-      let currentChunk: File[] = [];
-      let currentChunkSize = 0;
+      // Step 1: Get upload tokens from Vercel (small JSON payload)
+      setMessage('Preparing upload...');
+      const tokenResponse = await fetch('/api/google/get-upload-tokens', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          files: selectedFiles.map((file) => ({
+            filename: file.name,
+            mimeType: file.type || 'application/octet-stream',
+            size: file.size,
+          })),
+        }),
+      });
 
-      for (const file of selectedFiles) {
-        // If adding this file would exceed the chunk size, start a new chunk
-        if (currentChunkSize + file.size > MAX_CHUNK_SIZE && currentChunk.length > 0) {
-          chunks.push(currentChunk);
-          currentChunk = [file];
-          currentChunkSize = file.size;
-        } else {
-          currentChunk.push(file);
-          currentChunkSize += file.size;
-        }
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.json();
+        throw new Error(errorData.error?.message || 'Failed to get upload tokens');
       }
 
-      // Add the last chunk if it has files
-      if (currentChunk.length > 0) {
-        chunks.push(currentChunk);
-      }
+      const tokenData = await tokenResponse.json();
+      const { tokens, albumId } = tokenData.data;
 
-      let uploadedFiles = 0;
-      const totalFiles = selectedFiles.length;
-      const allUploadedItems: MediaItem[] = [];
+      // Step 2: Upload files directly to Google Photos (bypasses Vercel payload limits)
+      const uploadedTokens: Array<{ filename: string; uploadToken: string }> = [];
 
-      // Process each chunk as a separate HTTP request
-      for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-        const chunk = chunks[chunkIndex];
-        setMessage(
-          `Uploading chunk ${chunkIndex + 1} of ${chunks.length} (${chunk.length} files)...`,
-        );
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        const token = tokens[i];
 
-        const formData = new FormData();
-        chunk.forEach((file) => {
-          formData.append('media', file);
-        });
+        setMessage(`Uploading ${file.name} (${i + 1} of ${selectedFiles.length})...`);
 
-        const response = await fetch('/api/google/upload-media', {
-          method: 'POST',
-          body: formData,
-        });
+        try {
+          // Direct upload to Google Photos
+          const uploadResponse = await fetch(token.uploadUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'X-Goog-Upload-Content-Type': file.type || 'application/octet-stream',
+              'X-Goog-Upload-Protocol': 'raw',
+            },
+            body: file,
+          });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          let data;
-          try {
-            data = JSON.parse(errorText);
-          } catch {
-            // Handle non-JSON error responses (like Vercel's 413 errors)
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
+          if (!uploadResponse.ok) {
+            const errorText = await uploadResponse.text();
+            console.error(`Direct upload failed for ${file.name}:`, errorText);
+            throw new Error(`Upload failed for ${file.name}: ${uploadResponse.status}`);
           }
-          throw new Error(data.error?.message || data.message || 'Upload failed');
+
+          // Google Photos returns the upload token as the response body
+          const uploadToken = await uploadResponse.text();
+          uploadedTokens.push({
+            filename: file.name,
+            uploadToken: uploadToken.trim() || token.uploadToken,
+          });
+
+          const progress = Math.round(((i + 1) / selectedFiles.length) * 80); // Reserve 20% for completion
+          setUploadProgress(progress);
+        } catch (uploadError) {
+          console.error(`Failed to upload ${file.name}:`, uploadError);
+          // Continue with other files rather than failing completely
+          setMessage(`Warning: ${file.name} failed to upload. Continuing with remaining files...`);
         }
-
-        const data = await response.json();
-
-        if (!data.success) {
-          if (data.error?.code === 'AUTH_ERROR') {
-            setError('Authentication failed. Please log in again.');
-          } else if (data.error?.code === 'PAYLOAD_TOO_LARGE') {
-            setError('Chunk still too large. Try uploading fewer files at once.');
-          } else if (data.error?.code === 'TOO_MANY_FILES') {
-            setError(data.error.message + ' The maximum is 50 files per upload.');
-          } else {
-            setError(data.error?.message || data.message || 'Upload failed');
-          }
-          return;
-        }
-
-        // Collect uploaded items from this chunk
-        if (data.data?.mediaItems) {
-          allUploadedItems.push(...data.data.mediaItems);
-        }
-
-        uploadedFiles += chunk.length;
-        const progress = Math.round((uploadedFiles / totalFiles) * 100);
-        setUploadProgress(progress);
       }
 
-      // Success - all chunks uploaded
+      if (uploadedTokens.length === 0) {
+        throw new Error('All files failed to upload');
+      }
+
+      // Step 3: Complete upload by creating media items (small JSON payload to Vercel)
+      setMessage('Finalizing upload...');
+      const completeResponse = await fetch('/api/google/complete-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          uploadTokens: uploadedTokens,
+          albumId,
+        }),
+      });
+
+      if (!completeResponse.ok) {
+        const errorData = await completeResponse.json();
+        throw new Error(errorData.error?.message || 'Failed to complete upload');
+      }
+
+      await completeResponse.json();
+
+      // Success
       setMessage(
-        `Successfully uploaded ${totalFiles} file${totalFiles > 1 ? 's' : ''} to Google Photos!`,
+        uploadedTokens.length === selectedFiles.length
+          ? `Successfully uploaded ${uploadedTokens.length} file${
+              uploadedTokens.length > 1 ? 's' : ''
+            } to Google Photos!`
+          : `Uploaded ${uploadedTokens.length} of ${selectedFiles.length} files to Google Photos.`,
       );
       setUploadProgress(100);
 
@@ -330,13 +338,7 @@ function UploadForm({
     } catch (error) {
       console.error('Upload error:', error);
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-
-      // Handle Vercel's non-JSON 413 responses specifically
-      if (errorMessage.includes('413') || errorMessage.includes('Entity Too Large')) {
-        setError('Files too large for upload. Try selecting smaller files or fewer files at once.');
-      } else {
-        setError(errorMessage);
-      }
+      setError(errorMessage);
 
       setIsLoading(false);
       setUploadProgress(0);
