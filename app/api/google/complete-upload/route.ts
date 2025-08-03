@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { getGoogleAccessToken } from '@/utils/google-auth';
 
 interface CompleteUploadRequest {
   uploadTokens: Array<{
@@ -93,24 +94,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CompleteU
       );
     }
 
-    // Get user's Google access token
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('google_access_token')
-      .eq('id', user.id)
-      .single();
-
-    const accessToken = profile?.google_access_token;
-    if (!accessToken) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Google Photos access not configured',
-          error: { code: 'AUTH_ERROR', message: 'Google Photos access token required' },
-        },
-        { status: 401 },
-      );
-    }
+    // Get Google access token using refresh token
+    const accessToken = await getGoogleAccessToken();
 
     const body: CompleteUploadRequest = await request.json();
     const { uploadTokens, albumId } = body;
