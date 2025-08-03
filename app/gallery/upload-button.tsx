@@ -1,17 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { User } from '@supabase/supabase-js';
+
 import Button from '@/components/Button';
 import { UploadIcon } from '../components/Icon/icons/UploadIcon';
 import UploadModal from './upload-modal';
 
 interface UploadButtonProps {
-  user: User;
   onUploadComplete: () => void;
 }
 
-export default function UploadButton({ user, onUploadComplete }: UploadButtonProps) {
+export default function UploadButton({ onUploadComplete }: UploadButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleUploadComplete = () => {
@@ -29,7 +28,6 @@ export default function UploadButton({ user, onUploadComplete }: UploadButtonPro
       <UploadModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        user={user}
         onUploadComplete={handleUploadComplete}
       />
     </>

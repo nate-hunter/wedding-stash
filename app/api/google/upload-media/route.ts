@@ -44,11 +44,15 @@ interface UploadResponse {
   success: boolean;
   message: string;
   data?: {
-    mediaItemId?: string;
-    filename: string;
-    fileSize: number;
+    filesUploaded: number;
+    totalSize: number;
     uploadTime: string;
-    mimeType: string;
+    mediaItems: Array<{
+      mediaItemId?: string;
+      filename: string;
+      fileSize: number;
+      mimeType: string;
+    }>;
   };
   error?: {
     code: string;
@@ -259,26 +263,26 @@ async function uploadToGooglePhotos(
 }
 
 // Create media item in Google Photos
-async function createMediaItem(
-  uploadToken: string,
-  filename: string,
+// Create multiple media items using batch API
+async function createBatchMediaItems(
+  uploadResults: Array<{ uploadToken: string; filename: string; originalFile: File }>,
   description: string,
   albumId: string,
   accessToken: string,
 ): Promise<unknown> {
   const createMediaItemUrl = 'https://photoslibrary.googleapis.com/v1/mediaItems:batchCreate';
 
-  const newMediaItem: NewMediaItem = {
+  const newMediaItems: NewMediaItem[] = uploadResults.map(({ uploadToken, filename }) => ({
     description: description,
     simpleMediaItem: {
       fileName: filename,
       uploadToken: uploadToken,
     },
-  };
+  }));
 
   const mediaItemBody: BatchCreateRequest = {
     albumId: albumId,
-    newMediaItems: [newMediaItem],
+    newMediaItems: newMediaItems,
   };
 
   const createMediaItemResponse = await fetch(createMediaItemUrl, {
@@ -293,7 +297,7 @@ async function createMediaItem(
   if (!createMediaItemResponse.ok) {
     const errorJson = await createMediaItemResponse.json();
     throw new Error(
-      `Failed to create media item: ${createMediaItemResponse.status} - ${JSON.stringify(
+      `Failed to create media items: ${createMediaItemResponse.status} - ${JSON.stringify(
         errorJson,
       )}`,
     );
@@ -334,35 +338,43 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
     // Parse form data
     const formData = await request.formData();
 
-    // Extract file and form data
-    const mediaFile = formData.get('media') as File | null;
+    // Extract files and form data
+    const mediaFiles = formData.getAll('media') as File[];
     const description = (formData.get('description') as string) || '';
-    const filename = (formData.get('filename') as string) || mediaFile?.name || 'unnamed_file';
+    const filenamePrefix = (formData.get('filename') as string) || '';
 
-    if (!mediaFile) {
+    if (mediaFiles.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          message: 'No file provided',
+          message: 'No files provided',
           error: {
-            code: 'NO_FILE',
-            message: 'Please select a file to upload',
+            code: 'NO_FILES',
+            message: 'Please select files to upload',
           },
         },
         { status: 400 },
       );
     }
 
-    // Validate file
-    const validation = validateFile(mediaFile, filename);
-    if (!validation.isValid) {
+    // Validate all files
+    const validationErrors: string[] = [];
+    mediaFiles.forEach((file, index) => {
+      const filename = filenamePrefix || file.name || `file_${index + 1}`;
+      const validation = validateFile(file, filename);
+      if (!validation.isValid) {
+        validationErrors.push(`File ${index + 1} (${file.name}): ${validation.error}`);
+      }
+    });
+
+    if (validationErrors.length > 0) {
       return NextResponse.json(
         {
           success: false,
           message: 'File validation failed',
           error: {
             code: 'VALIDATION_ERROR',
-            message: validation.error!,
+            message: validationErrors.join('; '),
           },
         },
         { status: 400 },
@@ -375,32 +387,50 @@ export async function POST(request: NextRequest): Promise<NextResponse<UploadRes
     // Get or create album for the user
     const albumId = await getOrCreateAlbum(supabase, user, accessToken);
 
-    // Convert File to ArrayBuffer for upload
-    const fileContent = await mediaFile.arrayBuffer();
+    // Upload all files to Google Photos and collect upload tokens
+    const uploadPromises = mediaFiles.map(async (file, index) => {
+      const fileContent = await file.arrayBuffer();
+      const uploadToken = await uploadToGooglePhotos(
+        fileContent,
+        file.type || 'application/octet-stream',
+        accessToken,
+      );
 
-    // Upload to Google Photos
-    const uploadToken = await uploadToGooglePhotos(
-      fileContent,
-      mediaFile.type || 'application/octet-stream',
-      accessToken,
-    );
+      const filename = filenamePrefix || file.name || `file_${index + 1}`;
+      return {
+        uploadToken,
+        filename,
+        originalFile: file,
+      };
+    });
 
-    // Create media item
-    const result = await createMediaItem(uploadToken, filename, description, albumId, accessToken);
+    const uploadResults = await Promise.all(uploadPromises);
+
+    // Create media items using batch API
+    const result = await createBatchMediaItems(uploadResults, description, albumId, accessToken);
 
     const uploadTime = Date.now() - startTime;
+
+    // Extract media item results
+    const batchResult = result as { newMediaItemResults?: Array<{ mediaItem?: { id?: string } }> };
+    const mediaItemResults = batchResult?.newMediaItemResults || [];
 
     // Return success response
     return NextResponse.json({
       success: true,
-      message: 'Media uploaded successfully to Google Photos',
+      message: `${mediaFiles.length} file${
+        mediaFiles.length > 1 ? 's' : ''
+      } uploaded successfully to Google Photos`,
       data: {
-        mediaItemId: (result as { newMediaItemResults?: Array<{ mediaItem?: { id?: string } }> })
-          ?.newMediaItemResults?.[0]?.mediaItem?.id,
-        filename,
-        fileSize: mediaFile.size,
+        filesUploaded: mediaFiles.length,
+        totalSize: mediaFiles.reduce((sum, file) => sum + file.size, 0),
         uploadTime: `${uploadTime}ms`,
-        mimeType: mediaFile.type || 'application/octet-stream',
+        mediaItems: mediaItemResults.map((item, index) => ({
+          mediaItemId: item?.mediaItem?.id,
+          filename: uploadResults[index]?.filename,
+          fileSize: uploadResults[index]?.originalFile.size,
+          mimeType: uploadResults[index]?.originalFile.type || 'application/octet-stream',
+        })),
       },
     });
   } catch (error: unknown) {
