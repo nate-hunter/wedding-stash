@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 
-import { getUserGoogleMediaItems, type MediaItem } from './actions';
+import { getUserGoogleMediaItems, type MediaItem, type AlbumInfo } from './actions';
 
 import PhotoGrid from './photo-grid';
 import UploadButton from './upload-button';
@@ -16,6 +16,7 @@ export default function GalleryPage() {
 
   const [user, setUser] = useState<User | null>(null);
   const [photos, setPhotos] = useState<Array<MediaItem>>([]);
+  const [album, setAlbum] = useState<AlbumInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +44,7 @@ export default function GalleryPage() {
         const photosResult = await getUserGoogleMediaItems();
         console.log('>>>> photosResult', photosResult);
         setPhotos(photosResult.mediaItems);
+        setAlbum(photosResult.album || null);
         setNextPageToken(photosResult.nextPageToken);
         setHasMore(!!photosResult.nextPageToken);
       } catch (err) {
@@ -67,6 +69,7 @@ export default function GalleryPage() {
       // Reset pagination and fetch fresh data after upload
       const photosResult = await getUserGoogleMediaItems();
       setPhotos(photosResult.mediaItems);
+      setAlbum(photosResult.album || null);
       setNextPageToken(photosResult.nextPageToken);
       setHasMore(!!photosResult.nextPageToken);
     } catch (err) {
@@ -81,6 +84,7 @@ export default function GalleryPage() {
     try {
       const photosResult = await getUserGoogleMediaItems(nextPageToken);
       setPhotos((prevPhotos) => [...prevPhotos, ...photosResult.mediaItems]);
+      setAlbum(photosResult.album || null);
       setNextPageToken(photosResult.nextPageToken);
       setHasMore(!!photosResult.nextPageToken);
     } catch (err) {
@@ -110,13 +114,38 @@ export default function GalleryPage() {
     <div className='min-h-screen surface-bg'>
       <div className='max-w-7xl mx-auto px-sp3 py-sp3'>
         <div className='flex justify-between items-center mb-sp1'>
-          <h2 className='text-2xl font-bold'>My Gallery</h2>
-          <UploadButton user={user} onUploadComplete={handleUploadComplete} />
+          <div>
+            <h2 className='text-2xl font-bold'>My Gallery</h2>
+            {album && (
+              <p className='text-sm text-gray-600 mt-1'>
+                Album: <span className='font-medium'>{album.title}</span>
+                {album.isPublic && (
+                  <span className='ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs rounded'>
+                    Public
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
+          <UploadButton onUploadComplete={handleUploadComplete} />
         </div>
 
         <div className='mb-6'>
           <h4 className='text-md font-semibold mb-2'>Sort / Filter Options</h4>
           {/* TODO: Add sorting and filtering controls */}
+          {album && (
+            <div className='text-sm text-gray-600'>
+              <span>Album created: {new Date(album.createdAt).toLocaleDateString()}</span>
+              <span className='mx-2'>•</span>
+              <span>{album.mediaItemsCount} total items</span>
+              {album.createdByApp && (
+                <>
+                  <span className='mx-2'>•</span>
+                  <span className='text-blue-600'>App-managed</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <div className='border-2 border-lilikoi-300 rounded-md p-sp0 mx-auto'>

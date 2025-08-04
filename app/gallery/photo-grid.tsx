@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { type MediaItem } from './actions';
 import { getPhotoDisplayUrl } from '@/utils/google-photos';
 import PhotoModal from './photo-modal';
+import DownloadButton from './download-button';
 
 interface PhotoGridProps {
   photos: Array<MediaItem>;
@@ -125,6 +126,18 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
                     Video
                   </div>
                 )}
+
+                {/* Download button overlay */}
+                <div
+                  className='absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200'
+                  onClick={(e) => e.stopPropagation()} // Prevent photo modal from opening
+                >
+                  <DownloadButton
+                    mediaItem={photo}
+                    variant='icon'
+                    className='bg-black/75 text-white hover:bg-black/90 shadow-lg'
+                  />
+                </div>
               </div>
             );
           })
