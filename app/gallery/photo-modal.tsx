@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { type MediaItem } from './actions';
 import { getPhotoModalUrl } from '@/utils/google-photos';
+import DownloadButton from './download-button';
 
 interface PhotoModalProps {
   photos: MediaItem[];
@@ -212,8 +213,15 @@ export default function PhotoModal({
                 )}
               </div>
             </div>
-            <div className='text-sm opacity-75 ml-4'>
-              {currentIndex + 1} of {photos.length}
+            <div className='flex items-center space-x-4 ml-4'>
+              <DownloadButton
+                mediaItem={currentPhoto}
+                variant='icon'
+                className='text-white bg-white/20 hover:bg-white/30 border-0'
+              />
+              <div className='text-sm opacity-75'>
+                {currentIndex + 1} of {photos.length}
+              </div>
             </div>
           </div>
         </div>

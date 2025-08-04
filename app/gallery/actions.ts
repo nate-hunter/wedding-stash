@@ -36,6 +36,30 @@ interface GooglePhotoApiMediaItem {
   };
 }
 
+// Database media item interface
+interface DatabaseMediaItem {
+  id: string;
+  google_media_item_id: string;
+  description?: string;
+  product_url: string;
+  base_url: string;
+  mime_type: string;
+  filename: string;
+  width?: number;
+  height?: number;
+  creation_time?: string;
+  camera_make?: string;
+  camera_model?: string;
+  focal_length?: number;
+  aperture_f_number?: number;
+  iso_equivalent?: number;
+  exposure_time?: string;
+  fps?: number;
+  processing_status?: string;
+  media_type?: 'photo' | 'video' | 'other';
+  contributor_info?: string; // JSON string
+}
+
 // Updated MediaItem interface to match Google Photos API response
 export interface MediaItem {
   id: string;
@@ -62,11 +86,22 @@ export interface MediaItem {
   };
 }
 
+// Album information interface
+export interface AlbumInfo {
+  id: string;
+  title: string;
+  isPublic: boolean;
+  createdByApp: boolean;
+  mediaItemsCount: number;
+  createdAt: string;
+}
+
 // Response interface for paginated results
 export interface MediaItemsResult {
   mediaItems: MediaItem[];
   nextPageToken?: string;
   totalCount: number;
+  album?: AlbumInfo;
 }
 
 // Google OAuth2 client initialization
@@ -183,7 +218,7 @@ async function syncMediaItemsToDatabase(
   }
 }
 
-// New function to fetch media items from Google Photos
+// New function to fetch media items from database with fresh Google Photos data
 export async function getUserGoogleMediaItems(
   pageToken?: string,
   pageSize: number = 50,
@@ -201,76 +236,193 @@ export async function getUserGoogleMediaItems(
   }
 
   try {
+    // First, get user's album information
+    const { data: albumData, error: albumError } = await supabase
+      .from('google_photos_albums')
+      .select(
+        `
+        id,
+        title,
+        is_public,
+        created_by_app,
+        media_items_count,
+        created_at
+      `,
+      )
+      .eq('user_id', user.id)
+      .single();
+
+    let albumInfo: AlbumInfo | undefined;
+    if (albumData && !albumError) {
+      albumInfo = {
+        id: albumData.id,
+        title: albumData.title,
+        isPublic: albumData.is_public,
+        createdByApp: albumData.created_by_app,
+        mediaItemsCount: albumData.media_items_count,
+        createdAt: albumData.created_at,
+      };
+    }
+
+    // Then get media items from database (this gives us proper UUIDs and RLS enforcement)
+    const { data: dbMediaItems, error: dbError } = await supabase
+      .from('google_media_items')
+      .select(
+        `
+        id,
+        google_media_item_id,
+        description,
+        product_url,
+        base_url,
+        mime_type,
+        filename,
+        width,
+        height,
+        creation_time,
+        camera_make,
+        camera_model,
+        focal_length,
+        aperture_f_number,
+        iso_equivalent,
+        exposure_time,
+        fps,
+        processing_status,
+        contributor_info,
+        media_type
+      `,
+      )
+      .eq('user_id', user.id)
+      .order('creation_time', { ascending: false })
+      .limit(pageSize);
+
+    if (dbError) {
+      console.error('Database error fetching media items:', dbError);
+      throw new Error(`Failed to fetch media items from database: ${dbError.message}`);
+    }
+
+    // If no items in database, try to sync from Google Photos
+    if (!dbMediaItems || dbMediaItems.length === 0) {
+      await syncFromGooglePhotos(supabase, user.id, pageSize);
+
+      // Try fetching from database again after sync
+      const { data: freshDbMediaItems, error: freshDbError } = await supabase
+        .from('google_media_items')
+        .select(
+          `
+          id,
+          google_media_item_id,
+          description,
+          product_url,
+          base_url,
+          mime_type,
+          filename,
+          width,
+          height,
+          creation_time,
+          camera_make,
+          camera_model,
+          focal_length,
+          aperture_f_number,
+          iso_equivalent,
+          exposure_time,
+          fps,
+          processing_status,
+          contributor_info,
+          media_type
+        `,
+        )
+        .eq('user_id', user.id)
+        .order('creation_time', { ascending: false })
+        .limit(pageSize);
+
+      if (freshDbError || !freshDbMediaItems) {
+        return {
+          mediaItems: [],
+          nextPageToken: undefined,
+          totalCount: 0,
+          album: albumInfo,
+        };
+      }
+
+      return {
+        mediaItems: transformDbItemsToMediaItems(freshDbMediaItems),
+        nextPageToken: undefined, // TODO: Implement pagination
+        totalCount: freshDbMediaItems.length,
+        album: albumInfo,
+      };
+    }
+
+    return {
+      mediaItems: transformDbItemsToMediaItems(dbMediaItems),
+      nextPageToken: undefined, // TODO: Implement pagination
+      totalCount: dbMediaItems.length,
+      album: albumInfo,
+    };
+  } catch (error) {
+    console.error('Error in getUserGoogleMediaItems:', error);
+    throw new Error(
+      error instanceof Error ? error.message : 'Failed to fetch photos from database',
+    );
+  }
+}
+
+// Helper function to sync from Google Photos when database is empty
+async function syncFromGooglePhotos(supabase: SupabaseClient, userId: string, pageSize: number) {
+  try {
     // Get user's album from database
     const { data: albumData, error: albumError } = await supabase
       .from('google_photos_albums')
       .select('id, google_album_id')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (albumError || !albumData) {
-      // User has no album yet, return empty results
-      return {
-        mediaItems: [],
-        nextPageToken: undefined,
-        totalCount: 0,
-      };
+      return; // No album to sync from
     }
 
     // Initialize Google client
     const { accessToken } = await initializeGoogleClient();
 
     // Fetch media items from Google Photos
-    const { mediaItems, nextPageToken } = await fetchMediaItemsFromAlbum(
+    const { mediaItems } = await fetchMediaItemsFromAlbum(
       albumData.google_album_id,
       accessToken,
       pageSize,
-      pageToken,
     );
 
-    // Sync media items to database (async, don't wait)
+    // Sync to database
     if (mediaItems.length > 0) {
-      syncMediaItemsToDatabase(supabase, user.id, albumData.id, mediaItems).catch(console.error);
+      await syncMediaItemsToDatabase(supabase, userId, albumData.id, mediaItems);
     }
-
-    // Transform the response to match our MediaItem interface
-    const transformedMediaItems: MediaItem[] = mediaItems.map((item: GooglePhotoApiMediaItem) => ({
-      id: item.id,
-      description: item.description,
-      productUrl: item.productUrl,
-      baseUrl: item.baseUrl,
-      mimeType: item.mimeType,
-      filename: item.filename,
-      width: parseInt(item.mediaMetadata.width) || undefined,
-      height: parseInt(item.mediaMetadata.height) || undefined,
-      creationTime: item.mediaMetadata.creationTime,
-      cameraMake: item.mediaMetadata.photo?.cameraMake,
-      cameraModel: item.mediaMetadata.photo?.cameraModel,
-      focalLength: item.mediaMetadata.photo?.focalLength,
-      apertureFNumber: item.mediaMetadata.photo?.apertureFNumber,
-      isoEquivalent: item.mediaMetadata.photo?.isoEquivalent,
-      exposureTime: item.mediaMetadata.photo?.exposureTime,
-      fps: item.mediaMetadata.video?.fps,
-      processingStatus: item.mediaMetadata.video?.status,
-      mediaType: item.mimeType.startsWith('image/')
-        ? 'photo'
-        : item.mimeType.startsWith('video/')
-        ? 'video'
-        : 'other',
-      contributorInfo: item.contributorInfo,
-    }));
-
-    return {
-      mediaItems: transformedMediaItems,
-      nextPageToken: nextPageToken,
-      totalCount: transformedMediaItems.length,
-    };
   } catch (error) {
-    console.error('Error in getUserGoogleMediaItems:', error);
-    throw new Error(
-      error instanceof Error ? error.message : 'Failed to fetch photos from Google Photos',
-    );
+    console.error('Error syncing from Google Photos:', error);
+    // Don't throw - this is a fallback operation
   }
+}
+
+// Helper function to transform database items to MediaItem interface
+function transformDbItemsToMediaItems(dbItems: DatabaseMediaItem[]): MediaItem[] {
+  return dbItems.map((item) => ({
+    id: item.id, // This is now the database UUID
+    description: item.description,
+    productUrl: item.product_url,
+    baseUrl: item.base_url,
+    mimeType: item.mime_type,
+    filename: item.filename,
+    width: item.width,
+    height: item.height,
+    creationTime: item.creation_time,
+    cameraMake: item.camera_make,
+    cameraModel: item.camera_model,
+    focalLength: item.focal_length,
+    apertureFNumber: item.aperture_f_number,
+    isoEquivalent: item.iso_equivalent,
+    exposureTime: item.exposure_time,
+    fps: item.fps,
+    processingStatus: item.processing_status,
+    mediaType: item.media_type,
+    contributorInfo: item.contributor_info ? JSON.parse(item.contributor_info) : undefined,
+  }));
 }
 
 // Legacy function - keeping for backward compatibility but now throws error

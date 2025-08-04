@@ -27,6 +27,8 @@ create table public.google_photos_albums (
     media_items_count integer default 0,
     cover_photo_base_url text,
     cover_photo_media_item_id text,
+    is_public boolean default false,
+    created_by_app boolean default true,
     created_at timestamp with time zone default now(),
     updated_at timestamp with time zone default now(),
 
@@ -86,6 +88,8 @@ alter table public.profiles add constraint profiles_google_photos_album_id_fkey 
 comment on table public.profiles is 'Stores public user data. For private data, refer to the auth.users table.';
 
 comment on table public.google_photos_albums is 'Stores metadata for Google Photos albums linked to user profiles.';
+comment on column public.google_photos_albums.is_public is 'Determines if the album is publicly viewable by all authenticated users.';
+comment on column public.google_photos_albums.created_by_app is 'Indicates if the album was created by this application (true) or existed before in Google Photos (false).';
 
 alter table public.google_photos_albums add constraint google_photos_albums_user_id_fkey foreign key (user_id) references public.profiles(id) on delete cascade;
 
@@ -100,12 +104,15 @@ alter table public.google_media_items add constraint google_media_items_album_id
 --
 create index idx_google_photos_albums_user_id on public.google_photos_albums(user_id);
 create index idx_google_photos_albums_google_id on public.google_photos_albums(google_album_id);
+create index idx_google_photos_albums_is_public on public.google_photos_albums(is_public);
 
 create index idx_google_media_items_user_id on public.google_media_items(user_id);
 create index idx_google_media_items_album_id on public.google_media_items(album_id);
 create index idx_google_media_items_google_id on public.google_media_items(google_media_item_id);
 create index idx_google_media_items_creation_time on public.google_media_items(creation_time);
 create index idx_google_media_items_media_type on public.google_media_items(media_type);
+create index idx_google_media_items_public_access on public.google_media_items(creation_time desc, album_id, user_id);
+create index idx_google_media_items_type_date on public.google_media_items(media_type, creation_time desc);
 
 --
 -- enable row level security (rls)

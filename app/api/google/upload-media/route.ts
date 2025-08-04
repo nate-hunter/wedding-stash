@@ -164,8 +164,8 @@ async function getOrCreateAlbum(
   }
 
   // 2. If no album, create one
-  const timestamp = new Date().toISOString().replace('T', '_').substring(0, 19);
-  const albumTitle = `${user.email}_${timestamp}`;
+  const datestamp = new Date().toISOString().split('T')[0]; // Gets YYYY-MM-DD format
+  const albumTitle = `${user.email}__${datestamp}`;
 
   const newGoogleAlbum = await createGoogleAlbum(albumTitle, accessToken);
 
