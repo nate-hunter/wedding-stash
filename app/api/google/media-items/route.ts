@@ -1,12 +1,10 @@
-'use server';
-
-import { createClient } from '@/utils/supabase/server';
-import { redirect } from 'next/navigation';
 import { google } from 'googleapis';
+import { createClient } from '@/utils/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-// Google Photos API response interface (for typing the raw response)
-interface GooglePhotoApiMediaItem {
+// Types based on Google Photos Library API
+interface GoogleMediaItem {
   id: string;
   description?: string;
   productUrl: string;
@@ -36,37 +34,19 @@ interface GooglePhotoApiMediaItem {
   };
 }
 
-// Updated MediaItem interface to match Google Photos API response
-export interface MediaItem {
-  id: string;
-  description?: string;
-  productUrl: string;
-  baseUrl: string;
-  mimeType: string;
-  filename: string;
-  width?: number;
-  height?: number;
-  creationTime?: string;
-  cameraMake?: string;
-  cameraModel?: string;
-  focalLength?: number;
-  apertureFNumber?: number;
-  isoEquivalent?: number;
-  exposureTime?: string;
-  fps?: number;
-  processingStatus?: string;
-  mediaType?: 'photo' | 'video' | 'other';
-  contributorInfo?: {
-    profilePictureBaseUrl?: string;
-    displayName?: string;
+interface MediaItemsResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    mediaItems: GoogleMediaItem[];
+    nextPageToken?: string;
+    totalCount?: number;
   };
-}
-
-// Response interface for paginated results
-export interface MediaItemsResult {
-  mediaItems: MediaItem[];
-  nextPageToken?: string;
-  totalCount: number;
+  error?: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
 }
 
 // Google OAuth2 client initialization
@@ -109,7 +89,7 @@ async function fetchMediaItemsFromAlbum(
   accessToken: string,
   pageSize: number = 50,
   pageToken?: string,
-): Promise<{ mediaItems: GooglePhotoApiMediaItem[]; nextPageToken?: string }> {
+): Promise<{ mediaItems: GoogleMediaItem[]; nextPageToken?: string }> {
   const searchUrl = 'https://photoslibrary.googleapis.com/v1/mediaItems:search';
 
   const searchBody = {
@@ -146,7 +126,7 @@ async function syncMediaItemsToDatabase(
   supabase: SupabaseClient,
   userId: string,
   albumInternalId: string,
-  mediaItems: GooglePhotoApiMediaItem[],
+  mediaItems: GoogleMediaItem[],
 ) {
   const mediaItemsToInsert = mediaItems.map((item) => ({
     user_id: userId,
@@ -183,24 +163,35 @@ async function syncMediaItemsToDatabase(
   }
 }
 
-// New function to fetch media items from Google Photos
-export async function getUserGoogleMediaItems(
-  pageToken?: string,
-  pageSize: number = 50,
-): Promise<MediaItemsResult> {
-  const supabase = await createClient();
-
-  // Get the current user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    redirect('/login');
-  }
-
+// GET handler for fetching media items
+export async function GET(request: NextRequest): Promise<NextResponse<MediaItemsResponse>> {
   try {
+    // Get query parameters
+    const url = new URL(request.url);
+    const pageToken = url.searchParams.get('pageToken') || undefined;
+    const pageSize = Math.min(parseInt(url.searchParams.get('pageSize') || '50'), 100); // Max 100
+
+    // Authenticate user
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Authentication required',
+          error: {
+            code: 'AUTH_REQUIRED',
+            message: 'Please sign in to view your photos',
+          },
+        },
+        { status: 401 },
+      );
+    }
+
     // Get user's album from database
     const { data: albumData, error: albumError } = await supabase
       .from('google_photos_albums')
@@ -209,12 +200,17 @@ export async function getUserGoogleMediaItems(
       .single();
 
     if (albumError || !albumData) {
-      // User has no album yet, return empty results
-      return {
-        mediaItems: [],
-        nextPageToken: undefined,
-        totalCount: 0,
-      };
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'No album found for user',
+          error: {
+            code: 'NO_ALBUM',
+            message: 'User has not created any albums yet',
+          },
+        },
+        { status: 404 },
+      );
     }
 
     // Initialize Google client
@@ -233,47 +229,45 @@ export async function getUserGoogleMediaItems(
       syncMediaItemsToDatabase(supabase, user.id, albumData.id, mediaItems).catch(console.error);
     }
 
-    // Transform the response to match our MediaItem interface
-    const transformedMediaItems: MediaItem[] = mediaItems.map((item: GooglePhotoApiMediaItem) => ({
-      id: item.id,
-      description: item.description,
-      productUrl: item.productUrl,
-      baseUrl: item.baseUrl,
-      mimeType: item.mimeType,
-      filename: item.filename,
-      width: parseInt(item.mediaMetadata.width) || undefined,
-      height: parseInt(item.mediaMetadata.height) || undefined,
-      creationTime: item.mediaMetadata.creationTime,
-      cameraMake: item.mediaMetadata.photo?.cameraMake,
-      cameraModel: item.mediaMetadata.photo?.cameraModel,
-      focalLength: item.mediaMetadata.photo?.focalLength,
-      apertureFNumber: item.mediaMetadata.photo?.apertureFNumber,
-      isoEquivalent: item.mediaMetadata.photo?.isoEquivalent,
-      exposureTime: item.mediaMetadata.photo?.exposureTime,
-      fps: item.mediaMetadata.video?.fps,
-      processingStatus: item.mediaMetadata.video?.status,
-      mediaType: item.mimeType.startsWith('image/')
-        ? 'photo'
-        : item.mimeType.startsWith('video/')
-        ? 'video'
-        : 'other',
-      contributorInfo: item.contributorInfo,
-    }));
+    return NextResponse.json({
+      success: true,
+      message: 'Media items fetched successfully',
+      data: {
+        mediaItems,
+        nextPageToken,
+        totalCount: mediaItems.length,
+      },
+    });
+  } catch (error: unknown) {
+    console.error('Error fetching media items:', error);
 
-    return {
-      mediaItems: transformedMediaItems,
-      nextPageToken: nextPageToken,
-      totalCount: transformedMediaItems.length,
-    };
-  } catch (error) {
-    console.error('Error in getUserGoogleMediaItems:', error);
-    throw new Error(
-      error instanceof Error ? error.message : 'Failed to fetch photos from Google Photos',
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to fetch media items',
+        error: {
+          code: 'FETCH_ERROR',
+          message: error instanceof Error ? error.message : 'An unexpected error occurred',
+          details:
+            process.env.NODE_ENV === 'development' && error instanceof Error
+              ? error.stack
+              : undefined,
+        },
+      },
+      { status: 500 },
     );
   }
 }
 
-// Legacy function - keeping for backward compatibility but now throws error
-export async function getUserSupabaseMediaItems(): Promise<Array<MediaItem>> {
-  throw new Error('getUserSupabaseMediaItems is deprecated. Use getUserGoogleMediaItems instead.');
+// Handle other HTTP methods
+export async function POST(): Promise<NextResponse> {
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+}
+
+export async function PUT(): Promise<NextResponse> {
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+}
+
+export async function DELETE(): Promise<NextResponse> {
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
 }
