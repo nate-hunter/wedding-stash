@@ -41,6 +41,9 @@ export default function Navigation() {
           <Link href='/gallery' className='nav-link'>
             Gallery
           </Link>
+          <Link href='/albums' className='nav-link'>
+            Albums
+          </Link>
         </div>
 
         <div className='nav-links'>
