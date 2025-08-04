@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { User } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/client';
 
-import { getUserSupabaseMediaItems, type MediaItem } from './actions';
+import { getUserGoogleMediaItems, type MediaItem } from './actions';
 
 import PhotoGrid from './photo-grid';
 import UploadButton from './upload-button';
@@ -17,7 +17,10 @@ export default function GalleryPage() {
   const [user, setUser] = useState<User | null>(null);
   const [photos, setPhotos] = useState<Array<MediaItem>>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
+  const [hasMore, setHasMore] = useState(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -36,13 +39,15 @@ export default function GalleryPage() {
 
         setUser(user);
 
-        // Fetch photos
-        const photosData = await getUserSupabaseMediaItems();
-        console.log('>>>> photosData', photosData);
-        setPhotos(photosData);
+        // Fetch photos from Google Photos
+        const photosResult = await getUserGoogleMediaItems();
+        console.log('>>>> photosResult', photosResult);
+        setPhotos(photosResult.mediaItems);
+        setNextPageToken(photosResult.nextPageToken);
+        setHasMore(!!photosResult.nextPageToken);
       } catch (err) {
         console.error('Error fetching data:', err);
-        setError('Failed to load photos');
+        setError(err instanceof Error ? err.message : 'Failed to load photos');
       } finally {
         setLoading(false);
       }
@@ -53,14 +58,36 @@ export default function GalleryPage() {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~ LOGS ~~~~~~~~~~~~~~~~~~~~~~~~`
   console.log('>>>> photos', photos);
+  console.log('>>>> nextPageToken', nextPageToken);
+  console.log('>>>> hasMore', hasMore);
   // ~~~~~~~~~~~~~~~~~~~~~~~~ LOGS ~~~~~~~~~~~~~~~~~~~~~~~~`
 
   const handleUploadComplete = async () => {
     try {
-      const photosData = await getUserSupabaseMediaItems();
-      setPhotos(photosData);
+      // Reset pagination and fetch fresh data after upload
+      const photosResult = await getUserGoogleMediaItems();
+      setPhotos(photosResult.mediaItems);
+      setNextPageToken(photosResult.nextPageToken);
+      setHasMore(!!photosResult.nextPageToken);
     } catch (err) {
       console.error('Error refreshing photos:', err);
+    }
+  };
+
+  const loadMorePhotos = async () => {
+    if (!nextPageToken || loadingMore) return;
+
+    setLoadingMore(true);
+    try {
+      const photosResult = await getUserGoogleMediaItems(nextPageToken);
+      setPhotos((prevPhotos) => [...prevPhotos, ...photosResult.mediaItems]);
+      setNextPageToken(photosResult.nextPageToken);
+      setHasMore(!!photosResult.nextPageToken);
+    } catch (err) {
+      console.error('Error loading more photos:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load more photos');
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -84,7 +111,7 @@ export default function GalleryPage() {
       <div className='max-w-7xl mx-auto px-sp3 py-sp3'>
         <div className='flex justify-between items-center mb-sp1'>
           <h2 className='text-2xl font-bold'>My Gallery</h2>
-          <UploadButton onUploadComplete={handleUploadComplete} />
+          <UploadButton user={user} onUploadComplete={handleUploadComplete} />
         </div>
 
         <div className='mb-6'>
@@ -93,7 +120,12 @@ export default function GalleryPage() {
         </div>
 
         <div className='border-2 border-lilikoi-300 rounded-md p-sp0 mx-auto'>
-          <h4 className='text-lg font-semibold mb-4'>Photo Grid</h4>
+          <div className='flex justify-between items-center mb-4'>
+            <h4 className='text-lg font-semibold'>Photo Grid</h4>
+            {photos.length > 0 && (
+              <p className='text-sm text-gray-600'>{photos.length} photos loaded</p>
+            )}
+          </div>
 
           {error ? (
             <div className='text-center py-12'>
@@ -118,7 +150,29 @@ export default function GalleryPage() {
               </p>
             </div>
           ) : (
-            <PhotoGrid photos={photos} />
+            <>
+              <PhotoGrid photos={photos} />
+
+              {/* Load More Button */}
+              {hasMore && (
+                <div className='flex justify-center mt-6'>
+                  <button
+                    onClick={loadMorePhotos}
+                    disabled={loadingMore}
+                    className='px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2'
+                  >
+                    {loadingMore ? (
+                      <>
+                        <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white'></div>
+                        Loading...
+                      </>
+                    ) : (
+                      'Load More Photos'
+                    )}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
