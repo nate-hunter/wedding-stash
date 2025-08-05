@@ -11,8 +11,31 @@ export interface AlbumMediaItemsResult {
   totalCount: number;
 }
 
+// Database item interface
+interface DatabaseMediaItem {
+  id: string;
+  description?: string;
+  product_url: string;
+  base_url: string;
+  mime_type: string;
+  filename: string;
+  width?: number;
+  height?: number;
+  creation_time?: string;
+  camera_make?: string;
+  camera_model?: string;
+  focal_length?: number;
+  aperture_f_number?: number;
+  iso_equivalent?: number;
+  exposure_time?: string;
+  fps?: number;
+  processing_status?: string;
+  contributor_info?: Record<string, unknown>;
+  media_type?: 'photo' | 'video' | 'other';
+}
+
 // Transform database result to MediaItem
-function transformDbItemToMediaItem(dbItem: any): MediaItem {
+function transformDbItemToMediaItem(dbItem: DatabaseMediaItem): MediaItem {
   return {
     id: dbItem.id,
     description: dbItem.description,

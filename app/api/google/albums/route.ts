@@ -27,6 +27,27 @@ export interface AlbumsResult {
   totalCount: number;
 }
 
+// Database query result interface (matches Supabase return type)
+interface DatabaseAlbumQuery {
+  id: string;
+  title: string;
+  product_url?: string;
+  media_items_count: number;
+  cover_photo_base_url?: string;
+  is_public: boolean;
+  created_by_app: boolean;
+  created_at: string;
+  updated_at: string;
+  profiles?:
+    | {
+        id: string;
+        email?: string;
+        full_name?: string;
+        username?: string;
+      }[]
+    | null;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -89,7 +110,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform the data to match our interface
-    const albums: Album[] = (albumsData || []).map((album) => ({
+    const albums: Album[] = ((albumsData as DatabaseAlbumQuery[]) || []).map((album) => ({
       id: album.id,
       title: album.title,
       productUrl: album.product_url,
@@ -100,10 +121,10 @@ export async function GET(request: NextRequest) {
       createdAt: album.created_at,
       updatedAt: album.updated_at,
       owner: {
-        id: (album as any).profiles?.id || '',
-        email: (album as any).profiles?.email,
-        fullName: (album as any).profiles?.full_name,
-        username: (album as any).profiles?.username,
+        id: album.profiles?.[0]?.id || '',
+        email: album.profiles?.[0]?.email,
+        fullName: album.profiles?.[0]?.full_name,
+        username: album.profiles?.[0]?.username,
       },
     }));
 

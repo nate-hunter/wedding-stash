@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { Album, AlbumsResult } from '@/app/api/google/albums/route';
 import AlbumGrid from './AlbumGrid';
@@ -17,7 +17,7 @@ export default function AlbumsPage() {
   const supabase = createClient();
 
   // Fetch albums from API
-  const fetchAlbums = async (page: number = 1, append: boolean = false) => {
+  const fetchAlbums = useCallback(async (page: number = 1, append: boolean = false) => {
     try {
       if (!append) {
         setLoading(true);
@@ -52,7 +52,7 @@ export default function AlbumsPage() {
       setLoading(false);
       setLoadingMore(false);
     }
-  };
+  }, []);
 
   // Load more albums
   const handleLoadMore = async () => {
@@ -65,7 +65,7 @@ export default function AlbumsPage() {
   // Initial load
   useEffect(() => {
     fetchAlbums();
-  }, []);
+  }, [fetchAlbums]);
 
   // Check for authentication changes
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function AlbumsPage() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchAlbums, supabase.auth]);
 
   return (
     <div className='min-h-screen surface-bg'>

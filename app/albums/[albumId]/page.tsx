@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
@@ -25,54 +25,57 @@ export default function AlbumDetailPage() {
   const supabase = createClient();
 
   // Fetch album media items from API
-  const fetchAlbumMediaItems = async (page: number = 1, append: boolean = false) => {
-    try {
-      if (!append) {
-        setLoading(true);
-        setError(null);
-      } else {
-        setLoadingMore(true);
-      }
-
-      const response = await fetch(
-        `/api/google/albums/${albumId}/media-items?page=${page}&pageSize=50`,
-        {
-          credentials: 'same-origin',
-        },
-      );
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          setError('Album not found');
-          return;
+  const fetchAlbumMediaItems = useCallback(
+    async (page: number = 1, append: boolean = false) => {
+      try {
+        if (!append) {
+          setLoading(true);
+          setError(null);
+        } else {
+          setLoadingMore(true);
         }
-        if (response.status === 403) {
-          setError('You do not have access to this album');
-          return;
+
+        const response = await fetch(
+          `/api/google/albums/${albumId}/media-items?page=${page}&pageSize=50`,
+          {
+            credentials: 'same-origin',
+          },
+        );
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('Album not found');
+            return;
+          }
+          if (response.status === 403) {
+            setError('You do not have access to this album');
+            return;
+          }
+          throw new Error(`Failed to fetch album media items: ${response.status}`);
         }
-        throw new Error(`Failed to fetch album media items: ${response.status}`);
+
+        const result: AlbumMediaItemsResult = await response.json();
+
+        if (append) {
+          setPhotos((prev) => [...prev, ...result.mediaItems]);
+        } else {
+          setPhotos(result.mediaItems);
+          setAlbumTitle(result.albumTitle);
+        }
+
+        setNextPageToken(result.nextPageToken);
+        setHasMore(!!result.nextPageToken);
+        setTotalCount(result.totalCount);
+      } catch (err) {
+        console.error('Error fetching album media items:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch album media items');
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-
-      const result: AlbumMediaItemsResult = await response.json();
-
-      if (append) {
-        setPhotos((prev) => [...prev, ...result.mediaItems]);
-      } else {
-        setPhotos(result.mediaItems);
-        setAlbumTitle(result.albumTitle);
-      }
-
-      setNextPageToken(result.nextPageToken);
-      setHasMore(!!result.nextPageToken);
-      setTotalCount(result.totalCount);
-    } catch (err) {
-      console.error('Error fetching album media items:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch album media items');
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
+    },
+    [albumId],
+  );
 
   // Load more photos
   const handleLoadMore = async () => {
@@ -87,7 +90,7 @@ export default function AlbumDetailPage() {
     if (albumId) {
       fetchAlbumMediaItems();
     }
-  }, [albumId]);
+  }, [albumId, fetchAlbumMediaItems]);
 
   // Check for authentication changes
   useEffect(() => {
@@ -101,7 +104,7 @@ export default function AlbumDetailPage() {
     });
 
     return () => subscription.unsubscribe();
-  }, [albumId]);
+  }, [albumId, fetchAlbumMediaItems, supabase.auth]);
 
   return (
     <div className='min-h-screen surface-bg'>
