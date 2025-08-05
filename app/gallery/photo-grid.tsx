@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { type MediaItem } from './actions';
-import { getPhotoDisplayUrl } from '@/utils/google-photos';
 import PhotoModal from './photo-modal';
 import DownloadButton from './download-button';
 
@@ -47,13 +46,9 @@ export default function PhotoGrid({ photos }: PhotoGridProps) {
   };
 
   const getImageUrl = (photo: MediaItem): string => {
-    try {
-      // Use Google Photos sizing - thumbnail size for grid
-      return getPhotoDisplayUrl(photo.baseUrl, 400, 400);
-    } catch (error) {
-      console.error('Error generating image URL for photo:', photo.id, error);
-      return photo.baseUrl; // Fallback to base URL
-    }
+    // Use our image proxy API route to get fresh Google Photos URLs
+    // This ensures images don't expire and handles authentication
+    return `/api/google/image-proxy/${photo.id}?w=400&h=400`;
   };
 
   const handlePhotoClick = (index: number) => {

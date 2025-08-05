@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { type MediaItem } from './actions';
-import { getPhotoModalUrl } from '@/utils/google-photos';
 import DownloadButton from './download-button';
 
 interface PhotoModalProps {
@@ -68,13 +67,9 @@ export default function PhotoModal({
   if (!isOpen || !currentPhoto) return null;
 
   const getImageUrl = (photo: MediaItem): string => {
-    try {
-      // Use larger size for modal view
-      return getPhotoModalUrl(photo.baseUrl, 1200, 800);
-    } catch (error) {
-      console.error('Error generating modal image URL:', error);
-      return photo.baseUrl;
-    }
+    // Use our image proxy API route with larger dimensions for modal view
+    // This ensures images don't expire and handles authentication
+    return `/api/google/image-proxy/${photo.id}?w=1200&h=800`;
   };
 
   const formatDate = (dateString?: string): string => {
