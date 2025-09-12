@@ -1,0 +1,27 @@
+/* @import 'tailwindcss'; */
+
+/* Golden Ratio Spacing System */
+@theme {
+  --ratio: 1.618;
+  --base: 1rem;
+  --spacing-sp-5: calc(var(--sp-4) / var(--ratio));
+  --spacing-sp-4: calc(var(--sp-3) / var(--ratio));
+  --spacing-sp-3: calc(var(--sp-2) / var(--ratio));
+  --spacing-sp-2: calc(var(--sp-1) / var(--ratio));
+  --spacing-sp-1: calc(var(--sp0) / var(--ratio));
+  --spacing-sp0: var(--base);
+  --spacing-sp1: calc(var(--sp0) * var(--ratio));
+  --spacing-sp2: calc(var(--sp1) * var(--ratio));
+  --spacing-sp3: calc(var(--sp2) * var(--ratio));
+  --spacing-sp4: calc(var(--sp3) * var(--ratio));
+  --spacing-sp5: calc(var(--sp4) * var(--ratio));
+
+  /* --color-gold-500: var(--color-sunset-gold-500); */
+}
+
+/* @layer utilities {
+  .sp-5 {
+    margin: 0.09rem;
+    padding: 0.09rem;
+  }
+} */

@@ -66,9 +66,15 @@ next-env.d.ts
 .history
 .ionide
 
-# local dev / "sandbox" files
+# Local dev / "sandbox" files
 /**/__sb
 /**/__sb.*
 /**/*.sb
 /**/*.sb.*
 
+# Cursor
+.cursor/
+.cursor-prompts/
+
+# Markdown files for local dev
+.docs/

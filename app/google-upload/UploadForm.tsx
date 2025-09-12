@@ -48,23 +48,32 @@ const ALLOWED_EXTENSIONS = [
 ];
 
 interface FormData {
-  title: string;
-  description: string;
   filename: string;
 }
 
-function UploadForm() {
+interface UploadFormProps {
+  isModal?: boolean;
+  onUploadStart?: () => void;
+  onUploadSuccess?: () => void;
+  onUploadEnd?: () => void;
+}
+
+function UploadForm({
+  isModal = false,
+  onUploadStart,
+  onUploadSuccess,
+  onUploadEnd,
+}: UploadFormProps) {
   // State management
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [filename, setFilename] = useState<string>('');
   const [message, setMessage] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const [filePreview, setFilePreview] = useState<string>('');
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
 
   // Refs for accessibility
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,8 +85,6 @@ function UploadForm() {
     if (savedFormData) {
       try {
         const parsed: FormData = JSON.parse(savedFormData);
-        setTitle(parsed.title || '');
-        setDescription(parsed.description || '');
         setFilename(parsed.filename || '');
       } catch (error) {
         console.error('Error loading saved form data:', error);
@@ -87,7 +94,7 @@ function UploadForm() {
 
   // Save form data to localStorage when it changes
   const saveFormData = () => {
-    const formData: FormData = { title, description, filename };
+    const formData: FormData = { filename };
     localStorage.setItem('uploadFormData', JSON.stringify(formData));
   };
 
@@ -127,35 +134,91 @@ function UploadForm() {
     return errors;
   };
 
-  // Generate file preview
-  const generateFilePreview = (file: File) => {
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setFilePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setFilePreview('');
+  // Generate file previews for images
+  const generateFilePreviews = (files: File[]) => {
+    const previews: string[] = [];
+
+    files.forEach((file) => {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previews.push(e.target?.result as string);
+          setFilePreviews([...previews]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        previews.push(''); // No preview for non-images
+      }
+    });
+
+    setFilePreviews(previews);
+  };
+
+  // Handle multiple files (from input or drag-drop)
+  const handleFiles = (files: File[]) => {
+    if (files.length === 0) return;
+
+    setSelectedFiles(files);
+    setValidationErrors([]);
+    setFilePreviews([]);
+
+    // Show message about large uploads
+    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+    const totalSizeMB = totalSize / (1024 * 1024);
+
+    if (totalSizeMB > 100) {
+      setMessage(
+        `Selected ${files.length} files (${totalSizeMB.toFixed(
+          1,
+        )}MB total). Large files will be uploaded directly to Google Photos for optimal performance.`,
+      );
+    } else if (files.length > 10) {
+      setMessage(
+        `Selected ${files.length} files. Each will be uploaded directly to Google Photos without size limits.`,
+      );
+    }
+
+    // Validate files
+    const errors = files.map((file) => validateFile(file)).flat();
+    setValidationErrors(errors);
+
+    if (errors.length === 0) {
+      // Generate previews for all selected files
+      generateFilePreviews(files);
     }
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>): void => {
-    const file = event.target.files ? event.target.files[0] : null;
-    setSelectedFile(file);
-    setValidationErrors([]);
-    setFilePreview('');
+    const files = event.target.files ? Array.from(event.target.files) : [];
+    handleFiles(files);
+  };
 
-    if (file) {
-      // Validate file
-      const errors = validateFile(file);
-      setValidationErrors(errors);
+  // Drag and drop handlers
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(true);
+  };
 
-      if (errors.length === 0) {
-        // Pre-fill filename with original file name
-        setFilename(file.name);
-        generateFilePreview(file);
-      }
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>): void => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragOver(false);
+
+    const files = Array.from(event.dataTransfer.files);
+    // Filter to only allow media files
+    const mediaFiles = files.filter(
+      (file) => file.type.startsWith('image/') || file.type.startsWith('video/'),
+    );
+
+    if (mediaFiles.length > 0) {
+      handleFiles(mediaFiles);
     }
   };
 
@@ -163,12 +226,6 @@ function UploadForm() {
     const sanitizedValue = sanitizeInput(value);
 
     switch (field) {
-      case 'title':
-        setTitle(sanitizedValue);
-        break;
-      case 'description':
-        setDescription(sanitizedValue);
-        break;
       case 'filename':
         setFilename(sanitizedValue);
         break;
@@ -180,89 +237,93 @@ function UploadForm() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
-    setMessage('');
-    setError('');
-    setValidationErrors([]);
+
+    if (selectedFiles.length === 0) {
+      setError('Please select at least one file to upload.');
+      return;
+    }
+
     setIsLoading(true);
+    setError('');
+    setMessage('');
     setUploadProgress(0);
 
-    if (!selectedFile) {
-      setError('Please select a file to upload.');
-      setIsLoading(false);
-      return;
+    if (onUploadStart) {
+      onUploadStart();
     }
-
-    // Re-validate file before upload
-    const errors = validateFile(selectedFile);
-    if (errors.length > 0) {
-      setValidationErrors(errors);
-      setError('File validation failed. Please check the file requirements.');
-      setIsLoading(false);
-      return;
-    }
-
-    // Validate inputs (title is now optional)
-    // No validation needed for title since it's optional
-
-    const formData = new FormData();
-    formData.append('media', selectedFile);
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('filename', filename || selectedFile.name);
 
     try {
-      const response = await fetch(API_ROUTES.google.uploadMedia, {
-        method: 'POST',
-        body: formData,
-      });
+      // Upload files one by one to Google Photos
+      const uploadResults: string[] = [];
 
-      const data: UploadResponse = await response.json();
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        setMessage(`Uploading ${file.name} (${i + 1} of ${selectedFiles.length})...`);
 
-      if (response.ok && data.success) {
-        setMessage(data.message || 'Upload successful!');
-        // Clear form after successful upload
-        setSelectedFile(null);
-        setTitle('');
-        setDescription('');
+        const formData = new FormData();
+        formData.append('media', file);
+        formData.append('filename', filename || file.name);
+
+        const response = await fetch(API_ROUTES.google.uploadMedia, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data: UploadResponse = await response.json();
+
+        if (response.ok && data.success) {
+          uploadResults.push(`${file.name}: ${data.message}`);
+        } else {
+          uploadResults.push(`${file.name}: ${data.error?.message || 'Upload failed'}`);
+        }
+
+        // Update progress
+        setUploadProgress(((i + 1) / selectedFiles.length) * 100);
+      }
+
+      // Success
+      setMessage(
+        `Successfully uploaded ${uploadResults.length} file${
+          uploadResults.length > 1 ? 's' : ''
+        } to Google Photos!`,
+      );
+
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
+
+      // Reset form after successful upload
+      setTimeout(() => {
+        setSelectedFiles([]);
+        setFilePreviews([]);
         setFilename('');
-        setFilePreview('');
         setUploadProgress(0);
-        // Clear saved form data
         localStorage.removeItem('uploadFormData');
-        // Reset file input
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
-      } else {
-        // Handle API error responses
-        const errorMessage = data.error?.message || data.message || 'An unknown error occurred.';
-        setError(errorMessage);
-
-        // Handle specific error codes
-        if (data.error?.code === 'VALIDATION_ERROR') {
-          setValidationErrors([data.error.message]);
-        } else if (data.error?.code === 'AUTH_ERROR') {
-          setError('Authentication failed. Please log in again.');
+        if (onUploadEnd) {
+          onUploadEnd();
         }
-
-        console.error('Upload error:', data.error || data);
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to connect to the server.';
+      }, 2000);
+    } catch (error) {
+      console.error('Upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       setError(errorMessage);
-      console.error('Network error:', err);
-    } finally {
+
       setIsLoading(false);
       setUploadProgress(0);
+
+      if (onUploadEnd) {
+        onUploadEnd();
+      }
     }
   };
 
   const clearForm = () => {
-    setSelectedFile(null);
-    setTitle('');
-    setDescription('');
+    setSelectedFiles([]);
+    setFilePreviews([]);
     setFilename('');
-    setFilePreview('');
     setMessage('');
     setError('');
     setValidationErrors([]);
@@ -281,45 +342,113 @@ function UploadForm() {
   };
 
   return (
-    <div className='max-w-md mx-auto p-4 bg-white rounded-lg shadow-md mt-10 font-inter'>
-      <h2 className='text-2xl font-bold mb-4 text-center text-gray-800'>Upload Wedding Media</h2>
+    <div
+      className={`${
+        isModal ? 'p-4' : 'max-w-md mx-auto p-4 bg-white rounded-lg shadow-md mt-10'
+      } font-inter`}
+    >
+      {!isModal && (
+        <h2 className='text-2xl font-bold mb-4 text-center text-gray-800'>Upload Wedding Media</h2>
+      )}
 
       <form ref={formRef} onSubmit={handleSubmit} className='space-y-4' noValidate>
-        {/* File Input */}
+        {/* File Input with Drag and Drop */}
         <div>
-          <label htmlFor='mediaFile' className='block text-sm font-medium text-gray-700'>
-            Select Photo/Video:
+          <label htmlFor='mediaFile' className='block text-sm font-medium text-gray-700 mb-2'>
+            Select Photos/Videos:
           </label>
-          <input
-            ref={fileInputRef}
-            type='file'
-            id='mediaFile'
-            onChange={handleFileChange}
-            className='mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer'
-            accept='image/*, video/*'
-            aria-describedby='file-help file-errors'
-            aria-invalid={validationErrors.length > 0}
-          />
-          <div id='file-help' className='mt-1 text-sm text-gray-500'>
+
+          {/* Drag and Drop Zone */}
+          <div
+            className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+              isDragOver
+                ? 'border-indigo-400 bg-indigo-50'
+                : validationErrors.length > 0
+                ? 'border-red-300 bg-red-50'
+                : 'border-gray-300 hover:border-gray-400'
+            }`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className='text-center'>
+              <svg
+                className={`mx-auto h-12 w-12 ${isDragOver ? 'text-indigo-400' : 'text-gray-400'}`}
+                stroke='currentColor'
+                fill='none'
+                viewBox='0 0 48 48'
+                aria-hidden='true'
+              >
+                <path
+                  d='M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02'
+                  strokeWidth={2}
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                />
+              </svg>
+              <div className='mt-4'>
+                <p className={`text-sm ${isDragOver ? 'text-indigo-600' : 'text-gray-600'}`}>
+                  {isDragOver ? 'Drop files here' : 'Drag and drop files here, or'}
+                </p>
+                <button
+                  type='button'
+                  className='mt-1 text-sm text-indigo-600 hover:text-indigo-500 font-medium'
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  click to select files
+                </button>
+              </div>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type='file'
+              id='mediaFile'
+              onChange={handleFileChange}
+              className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
+              accept='image/*, video/*'
+              aria-describedby='file-help file-errors'
+              aria-invalid={validationErrors.length > 0}
+              multiple
+            />
+          </div>
+
+          <div id='file-help' className='mt-2 text-sm text-gray-500'>
             Maximum file size: {formatFileSize(MAX_FILE_SIZE)} for photos,{' '}
             {formatFileSize(MAX_VIDEO_SIZE)} for videos
           </div>
-          {selectedFile && (
-            <div className='mt-2 text-sm text-gray-600'>
-              Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
+          {selectedFiles.length > 0 && (
+            <div className='mt-2'>
+              <div className='text-sm text-gray-600 mb-2'>
+                Selected: {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''}
+              </div>
+              <div className='space-y-1'>
+                {selectedFiles.map((file, index) => (
+                  <div key={index} className='text-xs text-gray-500 bg-gray-50 p-2 rounded'>
+                    {file.name} ({formatFileSize(file.size)})
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
 
         {/* File Preview */}
-        {filePreview && (
+        {filePreviews.length > 0 && filePreviews.some((preview) => preview) && (
           <div className='mt-2'>
-            <label className='block text-sm font-medium text-gray-700 mb-2'>Preview:</label>
-            <img
-              src={filePreview}
-              alt='File preview'
-              className='max-w-full h-32 object-cover rounded border'
-            />
+            <label className='block text-sm font-medium text-gray-700 mb-2'>Image Preview:</label>
+            <div className='grid grid-cols-3 gap-2'>
+              {filePreviews.map((preview, index) =>
+                preview ? (
+                  <img
+                    key={index}
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    className='w-full h-20 object-cover rounded border'
+                  />
+                ) : null,
+              )}
+            </div>
           </div>
         )}
 
@@ -334,28 +463,6 @@ function UploadForm() {
             </ul>
           </div>
         )}
-
-        {/* Title Input */}
-        <div>
-          <label htmlFor='title' className='block text-sm font-medium text-gray-700'>
-            Title:
-          </label>
-          <input
-            type='text'
-            id='title'
-            value={title}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              handleInputChange('title', e.target.value)
-            }
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2'
-            placeholder='A lovely moment...'
-            maxLength={100}
-            aria-describedby='title-help'
-          />
-          <div id='title-help' className='mt-1 text-sm text-gray-500'>
-            Optional. Maximum 100 characters.
-          </div>
-        </div>
 
         {/* Filename Input */}
         <div>
@@ -377,28 +484,6 @@ function UploadForm() {
           />
           <div className='mt-1 text-sm text-gray-500'>
             Optional. Only letters, numbers, dots, underscores, and hyphens allowed.
-          </div>
-        </div>
-
-        {/* Description Input */}
-        <div>
-          <label htmlFor='description' className='block text-sm font-medium text-gray-700'>
-            Description:
-          </label>
-          <textarea
-            id='description'
-            value={description}
-            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-              handleInputChange('description', e.target.value)
-            }
-            rows={3}
-            className='mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2'
-            placeholder='Details about this photo/video...'
-            maxLength={500}
-            aria-describedby='description-help'
-          />
-          <div id='description-help' className='mt-1 text-sm text-gray-500'>
-            Optional. Maximum 500 characters. {description.length}/500
           </div>
         </div>
 
@@ -429,7 +514,7 @@ function UploadForm() {
                 ? 'bg-indigo-400 cursor-not-allowed'
                 : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
             }`}
-            disabled={isLoading || validationErrors.length > 0}
+            disabled={isLoading || validationErrors.length > 0 || selectedFiles.length === 0}
             aria-describedby='submit-help'
           >
             {isLoading ? (
@@ -455,10 +540,12 @@ function UploadForm() {
                     d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
                   />
                 </svg>
-                Uploading...
+                Uploading {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''}...
               </>
             ) : (
-              'Upload to Google Photos'
+              `Upload ${selectedFiles.length || 0} file${
+                selectedFiles.length !== 1 ? 's' : ''
+              } to Google Photos`
             )}
           </button>
 
@@ -475,7 +562,7 @@ function UploadForm() {
         <div id='submit-help' className='text-sm text-gray-500'>
           {validationErrors.length > 0
             ? 'Please fix validation errors before uploading.'
-            : 'Click to upload your file to Google Photos.'}
+            : 'Click to upload your files to Google Photos.'}
         </div>
       </form>
 
