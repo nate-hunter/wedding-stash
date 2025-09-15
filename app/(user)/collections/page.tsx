@@ -14,21 +14,19 @@ import {
 import Image from 'next/image';
 import { createClient } from '@/utils/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { Tables } from '@/types/supabase';
+import { MediaItemWithUrl, TypedSupabaseClient } from '@/utils/supabase/types';
+import { addSignedUrlsToMediaItems } from '@/utils/supabase/helpers';
 
 type TabOption = 'my-uploads' | 'galleries' | 'likes' | 'downloads';
 type LayoutViewOption = 'grid' | 'column' | 'table';
 
-// Use the generated Supabase types for MediaItem, with added signedUrl
-type MediaItem = Tables<'media_items'> & {
-  signedUrl?: string;
-};
+// Using the properly typed MediaItemWithUrl from our types
 
 export default function UserCollectionsPage() {
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo<TypedSupabaseClient>(() => createClient(), []);
 
   const [user, setUser] = useState<User | null>(null);
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
+  const [mediaItems, setMediaItems] = useState<MediaItemWithUrl[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,33 +37,32 @@ export default function UserCollectionsPage() {
       setUser(user);
 
       if (user) {
-        // fetch user's media items
-        const { data, error } = await supabase
-          .from('media_items')
-          .select('*')
-          .eq('uploader_id', user.id)
-          .order('created_at', { ascending: false });
+        try {
+          // Fetch user's media items with proper error handling
+          const { data, error } = await supabase
+            .from('media_items')
+            .select('*')
+            .eq('uploader_id', user.id)
+            .order('created_at', { ascending: false });
 
-        if (error) {
-          console.error('error fetching media items:', error);
-        } else {
-          console.log('fetched media items:', data);
+          if (error) {
+            console.error('Error fetching media items:', error);
+            setMediaItems([]);
+          } else if (data) {
+            console.log('Fetched media items:', data.length, 'items');
 
-          // Generate signed URLs for each media item
-          const mediaItemsWithSignedUrls = await Promise.all(
-            data.map(async (item) => {
-              const { data: signedUrlData } = await supabase.storage
-                .from('media-items')
-                .createSignedUrl(item.file_path, 3600); // 1 hour expiry
+            // Generate signed URLs using our helper function
+            const mediaItemsWithSignedUrls = await addSignedUrlsToMediaItems(
+              supabase,
+              data,
+              3600, // 1 hour expiry
+            );
 
-              return {
-                ...item,
-                signedUrl: signedUrlData?.signedUrl,
-              };
-            }),
-          );
-
-          setMediaItems(mediaItemsWithSignedUrls);
+            setMediaItems(mediaItemsWithSignedUrls);
+          }
+        } catch (err) {
+          console.error('Unexpected error fetching media items:', err);
+          setMediaItems([]);
         }
       }
       setLoading(false);
@@ -81,12 +78,12 @@ export default function UserCollectionsPage() {
     return () => subscription.unsubscribe();
   }, [supabase, supabase.auth]);
 
-  console.log('$$ { user }: ', user);
+  console.log('User authenticated:', !!user, user?.id || 'No user ID');
 
   const [currentTab, setCurrentTab] = useState<TabOption>('my-uploads');
   const [layoutView, setLayoutView] = useState<LayoutViewOption>('grid');
-  // const [mediaItems] = useState<Array<MediaItem>>(MEDIA_ITEMS_MOCK);
-  console.log(`Current view: ${layoutView}`);
+
+  console.log(`Current view: ${layoutView}, Media items: ${mediaItems.length}`);
 
   if (loading) {
     return (
@@ -243,10 +240,10 @@ export default function UserCollectionsPage() {
       •••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••
       */}
       <section className='gallery-grid'>
-        {mediaItems.map((item) => (
+        {mediaItems.map((item: MediaItemWithUrl) => (
           <div className='gallery-grid-item' key={item.id}>
             <Image
-              src={item.signedUrl || '/placeholder-image.jpg'}
+              src={item.signedUrl || item.url || '/placeholder-image.jpg'}
               alt={item.title || 'Uploaded media'}
               width={item.width || 300} // provide default for nullable width
               height={item.height || 300} // provide default for nullable height

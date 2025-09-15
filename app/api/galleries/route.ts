@@ -1,5 +1,16 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  GalleryInsert,
+  GetUserGalleriesWithDetailsResult,
+  CreateGalleryFormData,
+} from '@/utils/supabase/types';
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  executeQuery,
+  parseRequestJSON,
+} from '@/utils/supabase/helpers';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -11,35 +22,34 @@ export async function POST(request: NextRequest) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const { title, description } = await request.json();
+  const body = await parseRequestJSON<CreateGalleryFormData>(request);
 
-  if (!title) {
-    return NextResponse.json({ success: false, message: 'Title is required.' }, { status: 400 });
+  if (!body) {
+    return createErrorResponse('Invalid JSON in request body', 400);
   }
 
-  const { data: newGallery, error } = await supabase
-    .from('galleries')
-    .insert({
-      creator_id: user.id,
-      title,
-      description,
-    })
-    .select()
-    .single();
+  const { title, description } = body;
+
+  if (!title?.trim()) {
+    return createErrorResponse('Title is required.', 400);
+  }
+
+  const galleryData: GalleryInsert = {
+    creator_id: user.id,
+    title: title.trim(),
+    description: description?.trim() || null,
+  };
+
+  const { data: newGallery, error } = await executeQuery(
+    supabase.from('galleries').insert(galleryData).select().single(),
+  );
 
   if (error) {
     console.error('Error creating gallery:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to create gallery.', error: error.message },
-      { status: 500 },
-    );
+    return error;
   }
 
-  return NextResponse.json({
-    success: true,
-    message: 'Gallery created successfully.',
-    gallery: newGallery,
-  });
+  return createSuccessResponse({ gallery: newGallery }, 'Gallery created successfully.');
 }
 
 export async function GET() {
@@ -52,17 +62,19 @@ export async function GET() {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const { data: galleries, error } = await supabase.rpc('get_user_galleries_with_details', {
-    p_user_id: user.id,
-  });
+  const { data: galleries, error } = await executeQuery(
+    supabase.rpc('get_user_galleries_with_details', {
+      p_user_id: user.id,
+    }),
+  );
 
   if (error) {
     console.error('Error fetching galleries:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch galleries.', error: error.message },
-      { status: 500 },
-    );
+    return error;
   }
 
-  return NextResponse.json({ success: true, galleries });
+  return createSuccessResponse(
+    { galleries: galleries as GetUserGalleriesWithDetailsResult[] },
+    'Galleries fetched successfully.',
+  );
 }

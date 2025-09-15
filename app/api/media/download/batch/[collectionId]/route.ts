@@ -39,7 +39,7 @@ export async function GET(
     );
   }
 
-  if (new Date(collection.expires_at) < new Date()) {
+  if (collection.expires_at && new Date(collection.expires_at) < new Date()) {
     return NextResponse.json(
       { success: false, message: 'This download link has expired.' },
       { status: 410 },
@@ -83,7 +83,7 @@ export async function GET(
 
   // 4. Generate and return the zip file
   const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
-  const collectionName = collection.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  const collectionName = (collection.name || 'download').replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
   return new NextResponse(zipContent, {
     status: 200,

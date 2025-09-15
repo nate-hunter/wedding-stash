@@ -1,5 +1,20 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  GalleryUpdate,
+  GalleryWithMediaItems,
+  UpdateGalleryFormData,
+  GalleryMediaItemJunction,
+  DatabaseMediaItem,
+} from '@/utils/supabase/types';
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  executeQuery,
+  parseRequestJSON,
+  isValidUUID,
+  addPublicUrlsToMediaItems,
+} from '@/utils/supabase/helpers';
 
 export async function GET(
   request: NextRequest,
@@ -16,56 +31,50 @@ export async function GET(
 
   const { galleryId } = await params;
 
-  if (!galleryId) {
-    return NextResponse.json(
-      { success: false, message: 'Gallery ID is required.' },
-      { status: 400 },
-    );
+  if (!galleryId || !isValidUUID(galleryId)) {
+    return createErrorResponse('Valid Gallery ID is required.', 400);
   }
 
-  const { data: gallery, error } = await supabase
-    .from('galleries')
-    .select('*')
-    .eq('id', galleryId)
-    .eq('creator_id', user.id)
-    .single();
+  const { data: gallery, error } = await executeQuery(
+    supabase.from('galleries').select('*').eq('id', galleryId).eq('creator_id', user.id).single(),
+  );
 
-  if (error || !gallery) {
-    return NextResponse.json({ success: false, message: 'Gallery not found.' }, { status: 404 });
+  if (error) {
+    return error;
   }
 
-  const { data: mediaItems, error: mediaError } = await supabase
-    .from('gallery_media_items')
-    .select('media_items(*)')
-    .eq('gallery_id', galleryId);
+  if (!gallery) {
+    return createErrorResponse('Gallery not found.', 404);
+  }
+
+  const { data: mediaItems, error: mediaError } = await executeQuery(
+    supabase.from('gallery_media_items').select('media_items(*)').eq('gallery_id', galleryId),
+  );
 
   if (mediaError) {
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch media items for the gallery.' },
-      { status: 500 },
-    );
+    return mediaError;
   }
 
-  const mediaItemsWithUrls = mediaItems
-    .map((item) => {
-      const mediaItem = Array.isArray(item.media_items) ? item.media_items[0] : item.media_items;
-      if (!mediaItem) return null;
+  // Extract media items from the junction table results
+  const extractedMediaItems: DatabaseMediaItem[] = Array.isArray(mediaItems)
+    ? mediaItems
+        .map((item: GalleryMediaItemJunction) => {
+          const mediaItem = Array.isArray(item.media_items)
+            ? item.media_items[0]
+            : item.media_items;
+          return mediaItem || null;
+        })
+        .filter((item): item is DatabaseMediaItem => item !== null)
+    : [];
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('media-items').getPublicUrl(mediaItem.file_path);
+  const mediaItemsWithUrls = addPublicUrlsToMediaItems(supabase, extractedMediaItems);
 
-      return {
-        ...mediaItem,
-        url: publicUrl,
-      };
-    })
-    .filter(Boolean);
+  const galleryWithMediaItems = {
+    ...gallery,
+    media_items: mediaItemsWithUrls,
+  } as GalleryWithMediaItems;
 
-  return NextResponse.json({
-    success: true,
-    gallery: { ...gallery, media_items: mediaItemsWithUrls },
-  });
+  return createSuccessResponse({ gallery: galleryWithMediaItems }, 'Gallery fetched successfully.');
 }
 
 export async function PUT(
@@ -82,61 +91,63 @@ export async function PUT(
   }
 
   const { galleryId } = await params;
-  const { title, description } = await request.json();
+  const body = await parseRequestJSON<UpdateGalleryFormData>(request);
 
-  if (!galleryId) {
-    return NextResponse.json(
-      { success: false, message: 'Gallery ID is required.' },
-      { status: 400 },
-    );
+  if (!galleryId || !isValidUUID(galleryId)) {
+    return createErrorResponse('Valid Gallery ID is required.', 400);
   }
 
-  if (!title) {
-    return NextResponse.json({ success: false, message: 'Title is required.' }, { status: 400 });
+  if (!body) {
+    return createErrorResponse('Invalid JSON in request body', 400);
   }
 
-  const { data: updatedGallery, error } = await supabase
-    .from('galleries')
-    .update({ title, description })
-    .eq('id', galleryId)
-    .eq('creator_id', user.id)
-    .select()
-    .single();
+  const { title, description } = body;
+
+  if (!title?.trim()) {
+    return createErrorResponse('Title is required.', 400);
+  }
+
+  const updateData: GalleryUpdate = {
+    title: title.trim(),
+    description: description?.trim() || null,
+  };
+
+  const { data: updatedGallery, error } = await executeQuery(
+    supabase
+      .from('galleries')
+      .update(updateData)
+      .eq('id', galleryId)
+      .eq('creator_id', user.id)
+      .select()
+      .single(),
+  );
 
   if (error) {
     // Check if this is our custom constraint error for default galleries
-    if (error.message?.includes('Cannot change the title of the default "Uploads" gallery')) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'The title of your default "Uploads" gallery cannot be changed.',
-        },
-        { status: 400 },
+    const errorMessage =
+      typeof error === 'object' && error !== null && 'message' in error
+        ? (error as { message: string }).message
+        : String(error);
+
+    if (errorMessage?.includes('Cannot change the title of the default "Uploads" gallery')) {
+      return createErrorResponse(
+        'The title of your default "Uploads" gallery cannot be changed.',
+        400,
       );
     }
 
-    if (error.message?.includes('Default galleries must have the title "Uploads"')) {
-      return NextResponse.json(
-        { success: false, message: 'Default galleries must be titled "Uploads".' },
-        { status: 400 },
-      );
+    if (errorMessage?.includes('Default galleries must have the title "Uploads"')) {
+      return createErrorResponse('Default galleries must be titled "Uploads".', 400);
     }
 
-    return NextResponse.json(
-      { success: false, message: 'Gallery not found or update failed.' },
-      { status: 404 },
-    );
+    return error;
   }
 
   if (!updatedGallery) {
-    return NextResponse.json({ success: false, message: 'Gallery not found.' }, { status: 404 });
+    return createErrorResponse('Gallery not found.', 404);
   }
 
-  return NextResponse.json({
-    success: true,
-    message: 'Gallery updated successfully.',
-    gallery: updatedGallery,
-  });
+  return createSuccessResponse({ gallery: updatedGallery }, 'Gallery updated successfully.');
 }
 
 export async function DELETE(
@@ -154,25 +165,17 @@ export async function DELETE(
 
   const { galleryId } = await params;
 
-  if (!galleryId) {
-    return NextResponse.json(
-      { success: false, message: 'Gallery ID is required.' },
-      { status: 400 },
-    );
+  if (!galleryId || !isValidUUID(galleryId)) {
+    return createErrorResponse('Valid Gallery ID is required.', 400);
   }
 
-  const { error } = await supabase
-    .from('galleries')
-    .delete()
-    .eq('id', galleryId)
-    .eq('creator_id', user.id);
+  const { error } = await executeQuery(
+    supabase.from('galleries').delete().eq('id', galleryId).eq('creator_id', user.id),
+  );
 
   if (error) {
-    return NextResponse.json(
-      { success: false, message: 'Gallery not found or delete failed.' },
-      { status: 404 },
-    );
+    return error;
   }
 
-  return NextResponse.json({ success: true, message: 'Gallery deleted successfully.' });
+  return createSuccessResponse(null, 'Gallery deleted successfully.');
 }

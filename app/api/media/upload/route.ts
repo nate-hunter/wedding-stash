@@ -1,5 +1,20 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  MediaItemInsert,
+  GalleryMediaItemInsert,
+  FileUploadResult,
+  DatabaseMediaItem,
+} from '@/utils/supabase/types';
+import {
+  createSuccessResponse,
+  createErrorResponse,
+  executeQuery,
+  extractFormDataFiles,
+  generateFilePath,
+  isValidMediaFile,
+  isValidFileSize,
+} from '@/utils/supabase/helpers';
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -32,19 +47,31 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData();
-  console.log('????? request formData ?????', formData); // $ has formdata: [ { name: 'file', value: [file] } ]
-  // const files = formData.getAll('files') as File[];
-  const files = formData.getAll('file') as Array<File>;
-  console.log('????? request files ?????', files); // !!! No files found - empty array [] !!!
+  console.log('????? request formData ?????', formData);
 
-  if (!files || files.length === 0) {
-    return new NextResponse('No files provided', { status: 400 });
+  // Type-safe file extraction
+  const files = extractFormDataFiles(formData, 'file');
+  console.log('????? extracted files ?????', files.length, 'files');
+
+  if (files.length === 0) {
+    return createErrorResponse('No valid files provided', 400);
   }
 
-  const uploadResults = [];
+  // Validate files
+  const invalidFiles = files.filter((file) => !isValidMediaFile(file) || !isValidFileSize(file));
+  if (invalidFiles.length > 0) {
+    return createErrorResponse(
+      `Invalid files detected: ${invalidFiles
+        .map((f) => f.name)
+        .join(', ')}. Only images and videos under 50MB are allowed.`,
+      400,
+    );
+  }
+
+  const uploadResults: FileUploadResult[] = [];
 
   for (const file of files) {
-    const filePath = `${user.id}/${Date.now()}-${file.name}`;
+    const filePath = generateFilePath(user.id, file.name);
     const { data, error } = await supabase.storage.from('media-items').upload(filePath, file);
 
     if (error) {
@@ -62,72 +89,58 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const successfulUploads = uploadResults.filter((r) => r.success);
+  const successfulUploads = uploadResults.filter(
+    (r): r is FileUploadResult & { success: true } => r.success,
+  );
 
   if (successfulUploads.length === 0) {
-    return NextResponse.json(
-      { success: false, message: 'All file uploads failed.', results: uploadResults },
-      { status: 500 },
-    );
+    return createErrorResponse('All file uploads failed.', 500);
   }
 
-  const mediaItemsToInsert = successfulUploads.map((upload) => ({
+  const mediaItemsToInsert: MediaItemInsert[] = successfulUploads.map((upload) => ({
     uploader_id: user.id,
-    file_path: upload.path,
+    file_path: upload.path!,
     filename: upload.name,
     original_filename: upload.name,
     title: upload.name,
-    mime_type: upload.type,
+    mime_type: upload.type!,
     file_size: upload.size,
   }));
 
-  const { data: newMediaItems, error: dbError } = await supabase
-    .from('media_items')
-    .insert(mediaItemsToInsert)
-    .select();
+  const { data: newMediaItems, error: dbError } = await executeQuery(
+    supabase.from('media_items').insert(mediaItemsToInsert).select(),
+  );
 
   if (dbError) {
     console.error('Error inserting media items into database:', dbError);
-    // Note: This is a simplification. In a real-world scenario, you might want to
-    // implement a cleanup process to delete the already uploaded files from storage
-    // if the database insert fails.
-    return NextResponse.json(
-      { success: false, message: 'Failed to save file metadata.', error: dbError.message },
-      { status: 500 },
-    );
+    return dbError;
   }
 
   // associate uploaded media items with the default gallery
-  if (newMediaItems && newMediaItems.length > 0) {
-    const galleryMediaItemsToInsert = newMediaItems.map((item) => ({
-      gallery_id: galleryId,
-      media_item_id: item.id,
-      added_by: user.id,
-    }));
+  if (newMediaItems && Array.isArray(newMediaItems) && newMediaItems.length > 0) {
+    const galleryMediaItemsToInsert: GalleryMediaItemInsert[] = newMediaItems.map(
+      (item: DatabaseMediaItem) => ({
+        gallery_id: galleryId,
+        media_item_id: item.id,
+        added_by: user.id,
+      }),
+    );
 
-    const { error: galleryLinkError } = await supabase
-      .from('gallery_media_items')
-      .insert(galleryMediaItemsToInsert);
+    const { error: galleryLinkError } = await executeQuery(
+      supabase.from('gallery_media_items').insert(galleryMediaItemsToInsert),
+    );
 
     if (galleryLinkError) {
       console.error('error linking media items to gallery:', galleryLinkError);
-      // note: this is a simplification. in a real-world scenario, you might want to
-      // implement a cleanup process to delete the already uploaded files from storage
-      // and the media_items records if the gallery linking fails.
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'failed to link media to gallery.',
-          error: galleryLinkError.message,
-        },
-        { status: 500 },
-      );
+      return galleryLinkError;
     }
   }
 
-  return NextResponse.json({
-    success: true,
-    message: `${successfulUploads.length} of ${files.length} files uploaded successfully.`,
-    mediaItems: newMediaItems,
-  });
+  return createSuccessResponse(
+    {
+      mediaItems: newMediaItems,
+      uploadResults,
+    },
+    `${successfulUploads.length} of ${files.length} files uploaded successfully.`,
+  );
 }

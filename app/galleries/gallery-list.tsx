@@ -3,38 +3,43 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
+import {
+  GalleryWithDetails,
+  ApiSuccessResponse,
+  TypedSupabaseClient,
+} from '@/utils/supabase/types';
 
-// This type should match the structure returned by the get_user_galleries_with_details function
-type Gallery = {
-  id: string;
-  title: string;
-  description: string | null;
-  media_item_count: number;
-  cover_image_path: string | null;
-};
+// API Response type for the galleries endpoint
+type GalleriesResponse = ApiSuccessResponse<{
+  galleries: GalleryWithDetails[];
+}>;
 
 export function GalleryList() {
-  const [galleries, setGalleries] = useState<Gallery[]>([]);
+  const [galleries, setGalleries] = useState<GalleryWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = useMemo<TypedSupabaseClient>(() => createClient(), []);
 
   useEffect(() => {
     async function fetchGalleries() {
       try {
         const response = await fetch('/api/galleries');
         if (!response.ok) {
-          throw new Error('Failed to fetch galleries');
+          throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const data = await response.json();
-        if (data.success) {
-          setGalleries(data.galleries);
+
+        const data: GalleriesResponse = await response.json();
+
+        if (data.success && data.data?.galleries) {
+          setGalleries(data.data.galleries);
         } else {
           throw new Error(data.message || 'Failed to fetch galleries');
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+        console.error('Error fetching galleries:', err);
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -64,7 +69,7 @@ export function GalleryList() {
 
   return (
     <div className='grid grid-cols-1 gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
-      {galleries.map((gallery) => {
+      {galleries.map((gallery: GalleryWithDetails) => {
         const coverImageUrl = gallery.cover_image_path
           ? supabase.storage.from('media-items').getPublicUrl(gallery.cover_image_path).data
               .publicUrl
@@ -95,7 +100,9 @@ export function GalleryList() {
                 {gallery.description && (
                   <p className='mt-1 text-sm text-gray-600 truncate'>{gallery.description}</p>
                 )}
-                <p className='mt-2 text-xs text-gray-500'>{gallery.media_item_count} items</p>
+                <p className='mt-2 text-xs text-gray-500'>
+                  {gallery.media_item_count} {gallery.media_item_count === 1 ? 'item' : 'items'}
+                </p>
               </div>
             </div>
           </Link>
