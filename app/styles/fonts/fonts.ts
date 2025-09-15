@@ -41,7 +41,7 @@ const wonderUnitSans = localFont({
       style: 'bold',
     },
     {
-      path: './families/WonderUnitSans/WonderUnitSans-ExtraBold.woff2',
+      path: './families/WonderUnitSans/WonderUnitSans-Extrabold.woff2',
       weight: '800',
       style: 'extra-bold',
     },
@@ -59,7 +59,7 @@ const wonderUnitSans = localFont({
 const thicccboi = localFont({
   src: [
     {
-      path: './families/Thicccboi/Thicccboi-Thin.woff2',
+      path: './families/Thicccboi/THICCCBOI-Thin.woff2',
       weight: '100',
       style: 'thin',
     },
