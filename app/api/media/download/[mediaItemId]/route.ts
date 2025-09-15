@@ -1,8 +1,11 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest, { params }: { params: { mediaItemId: string } }) {
-  const supabase = createClient();
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ mediaItemId: string }> },
+) {
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -11,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: { mediaIte
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const { mediaItemId } = params;
+  const { mediaItemId } = await params;
 
   if (!mediaItemId) {
     return NextResponse.json(

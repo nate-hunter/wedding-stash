@@ -2,8 +2,11 @@ import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
 
-export async function GET(request: NextRequest, { params }: { params: { collectionId: string } }) {
-  const supabase = createClient();
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ collectionId: string }> },
+) {
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -12,7 +15,7 @@ export async function GET(request: NextRequest, { params }: { params: { collecti
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const { collectionId } = params;
+  const { collectionId } = await params;
 
   if (!collectionId) {
     return NextResponse.json(
