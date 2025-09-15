@@ -1,7 +1,10 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest, { params }: { params: { galleryId: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ galleryId: string }> },
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -11,7 +14,7 @@ export async function GET(request: NextRequest, { params }: { params: { galleryI
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const { galleryId } = params;
+  const { galleryId } = await params;
 
   if (!galleryId) {
     return NextResponse.json(
@@ -65,7 +68,10 @@ export async function GET(request: NextRequest, { params }: { params: { galleryI
   });
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { galleryId: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ galleryId: string }> },
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -75,7 +81,7 @@ export async function PUT(request: NextRequest, { params }: { params: { galleryI
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const { galleryId } = params;
+  const { galleryId } = await params;
   const { title, description } = await request.json();
 
   if (!galleryId) {
@@ -133,7 +139,10 @@ export async function PUT(request: NextRequest, { params }: { params: { galleryI
   });
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { galleryId: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ galleryId: string }> },
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -143,7 +152,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { galle
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const { galleryId } = params;
+  const { galleryId } = await params;
 
   if (!galleryId) {
     return NextResponse.json(

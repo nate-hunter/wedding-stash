@@ -1,7 +1,10 @@
 import { createClient } from '@/utils/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest, { params }: { params: { galleryId: string } }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ galleryId: string }> },
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -11,7 +14,7 @@ export async function POST(request: NextRequest, { params }: { params: { gallery
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const { galleryId } = params;
+  const { galleryId } = await params;
   const { media_item_ids } = await request.json();
 
   if (!galleryId) {
@@ -93,7 +96,10 @@ export async function POST(request: NextRequest, { params }: { params: { gallery
   });
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { galleryId: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ galleryId: string }> },
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -103,7 +109,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { galle
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
-  const { galleryId } = params;
+  const { galleryId } = await params;
   const { media_item_ids } = await request.json();
 
   if (!galleryId) {
