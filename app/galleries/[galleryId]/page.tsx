@@ -11,12 +11,13 @@ type Gallery = {
   id: string;
   title: string;
   description: string | null;
+  is_default: boolean;
 };
 
 type GalleryDetailPageProps = {
-  params: {
+  params: Promise<{
     galleryId: string;
-  };
+  }>;
 };
 
 export default function GalleryDetailPage({ params }: GalleryDetailPageProps) {
@@ -26,10 +27,21 @@ export default function GalleryDetailPage({ params }: GalleryDetailPageProps) {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedMediaItems, setSelectedMediaItems] = useState<string[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [galleryId, setGalleryId] = useState<string | null>(null);
 
   useEffect(() => {
+    async function resolveParams() {
+      const resolvedParams = await params;
+      setGalleryId(resolvedParams.galleryId);
+    }
+    resolveParams();
+  }, [params]);
+
+  useEffect(() => {
+    if (!galleryId) return;
+
     async function getGalleryDetails() {
-      const response = await fetch(`/api/galleries/${params.galleryId}`);
+      const response = await fetch(`/api/galleries/${galleryId}`);
       if (response.status === 404) {
         notFound();
       }
@@ -44,7 +56,7 @@ export default function GalleryDetailPage({ params }: GalleryDetailPageProps) {
       setIsLoading(false);
     }
     getGalleryDetails();
-  }, [params.galleryId]);
+  }, [galleryId]);
 
   const handleDownload = async () => {
     setIsDownloading(true);
@@ -74,7 +86,7 @@ export default function GalleryDetailPage({ params }: GalleryDetailPageProps) {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !galleryId) {
     return <div>Loading...</div>;
   }
 
@@ -112,7 +124,7 @@ export default function GalleryDetailPage({ params }: GalleryDetailPageProps) {
           </div>
         </div>
         {gallery.description && <p className='mb-4 text-gray-600'>{gallery.description}</p>}
-        <MediaGrid galleryId={params.galleryId} onSelectionChange={setSelectedMediaItems} />
+        <MediaGrid galleryId={galleryId!} onSelectionChange={setSelectedMediaItems} />
       </main>
       <EditGalleryModal
         isOpen={isEditModalOpen}
