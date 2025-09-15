@@ -64,43 +64,43 @@ const thicccboi = localFont({
       style: 'thin',
     },
     {
-      path: './families/Thicccboi/Thicccboi-Light.woff2',
+      path: './families/Thicccboi/THICCCBOI-Light.woff2',
       weight: '300',
       style: 'light',
     },
     {
-      path: './families/Thicccboi/Thicccboi-Regular.woff2',
+      path: './families/Thicccboi/THICCCBOI-Regular.woff2',
       weight: '400',
       style: 'normal',
     },
 
     {
-      path: './families/Thicccboi/Thicccboi-Medium.woff2',
+      path: './families/Thicccboi/THICCCBOI-Medium.woff2',
       weight: '500',
       style: 'medium',
     },
     {
-      path: './families/Thicccboi/Thicccboi-SemiBold.woff2',
+      path: './families/Thicccboi/THICCCBOI-SemiBold.woff2',
       weight: '600',
       style: 'semi-bold',
     },
     {
-      path: './families/Thicccboi/Thicccboi-Bold.woff2',
+      path: './families/Thicccboi/THICCCBOI-Bold.woff2',
       weight: '700',
       style: 'bold',
     },
     {
-      path: './families/Thicccboi/Thicccboi-ExtraBold.woff2',
+      path: './families/Thicccboi/THICCCBOI-ExtraBold.woff2',
       weight: '800',
       style: 'extra-bold',
     },
     {
-      path: './families/Thicccboi/Thicccboi-Black.woff2',
+      path: './families/Thicccboi/THICCCBOI-Black.woff2',
       weight: '900',
       style: 'black',
     },
     {
-      path: './families/Thicccboi/Thicccboi-ThicccAF.woff2',
+      path: './families/Thicccboi/THICCCBOI-ThicccAF.woff2',
       weight: '950',
       style: 'heavy',
     },
