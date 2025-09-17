@@ -5,21 +5,37 @@ import { Dialog, DialogPanel, DialogTitle, Transition, TransitionChild } from '@
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
-// TODO: Replace Dialog with custom modal component
-// TODO: Replace Toast with custom toast component
-
-type CreateGalleryModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-};
+import { useGalleries } from './hooks/useGalleries';
+import { CreateGalleryModalProps, GalleryFormData } from './types';
 
 export function CreateGalleryModal({ isOpen, onClose, onSuccess }: CreateGalleryModalProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [formData, setFormData] = useState<GalleryFormData>({
+    title: '',
+    description: '',
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { createGallery } = useGalleries();
+
+  const handleInputChange =
+    (field: keyof GalleryFormData) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: e.target.value,
+      }));
+    };
+
+  const resetForm = () => {
+    setFormData({ title: '', description: '' });
+    setError(null);
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,23 +43,14 @@ export function CreateGalleryModal({ isOpen, onClose, onSuccess }: CreateGallery
     setError(null);
 
     try {
-      const response = await fetch('/api/galleries', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title, description }),
+      const gallery = await createGallery({
+        title: formData.title.trim(),
+        description: formData.description.trim() || undefined,
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Failed to create gallery');
-      }
-
       toast.success('Gallery created successfully!');
-      onSuccess();
-      onClose();
+      onSuccess(gallery);
+      handleClose();
       router.refresh();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
@@ -96,12 +103,12 @@ export function CreateGalleryModal({ isOpen, onClose, onSuccess }: CreateGallery
                     <input
                       type='text'
                       id='title'
-                      value={title}
+                      value={formData.title}
                       placeholder='Title...'
-                      onChange={(e) => setTitle(e.target.value)}
+                      onChange={handleInputChange('title')}
                       className='form-input'
-                      // className='w-full p-2 mt-1 border border-border rounded-md'
                       required
+                      aria-describedby={error ? 'form-error' : undefined}
                     />
                   </div>
                   <div className='form-field'>
@@ -110,24 +117,28 @@ export function CreateGalleryModal({ isOpen, onClose, onSuccess }: CreateGallery
                     </label>
                     <textarea
                       id='description'
-                      value={description}
+                      value={formData.description}
                       placeholder='Description (Optional)...'
-                      onChange={(e) => setDescription(e.target.value)}
+                      onChange={handleInputChange('description')}
                       className='form-input'
-                      // className='w-full p-2 mt-1 border border-border rounded-md'
                       rows={2}
+                      aria-describedby={error ? 'form-error' : undefined}
                     />
                   </div>
                   {/* </div> */}
 
-                  {error && <p className='mt-2 text-sm text-danger'>{error}</p>}
+                  {error && (
+                    <p id='form-error' className='mt-2 text-sm text-danger' role='alert'>
+                      {error}
+                    </p>
+                  )}
 
                   <div className='form-btns--col mt-6'>
                     <button
                       type='submit'
                       className='btn-cta'
                       // className='inline-flex justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2'
-                      disabled={!title.trim() || isSubmitting}
+                      disabled={!formData.title.trim() || isSubmitting}
                     >
                       {isSubmitting ? 'Creating...' : 'Create Gallery'}
                     </button>
@@ -135,7 +146,7 @@ export function CreateGalleryModal({ isOpen, onClose, onSuccess }: CreateGallery
                       type='button'
                       className='btn-inverted'
                       // className='inline-flex justify-center px-4 py-2 ml-2 text-sm font-medium text-gray-700 bg-gray-100 border border-transparent rounded-md hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2'
-                      onClick={onClose}
+                      onClick={handleClose}
                       disabled={isSubmitting}
                     >
                       Cancel
