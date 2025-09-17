@@ -1,42 +1,42 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
 import Image from 'next/image';
 
-export default function Avatar({
-  uid,
-  url,
-  size,
-  onUpload,
-}: {
+import { createClient } from '@/utils/supabase/client';
+import { TypedSupabaseClient } from '@/utils/supabase/types';
+
+interface AvatarProps {
   uid: string | null;
   url: string | null;
   size: number;
   onUpload: (url: string) => void;
-}) {
-  const supabase = createClient();
+}
+
+export default function Avatar({ uid, url, size, onUpload }: AvatarProps) {
+  const supabase: TypedSupabaseClient = createClient();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(url);
   const [uploading, setUploading] = useState(false);
-
-  console.log('????? where am I ?????');
 
   useEffect(() => {
     async function downloadImage(path: string) {
       try {
         const { data, error } = await supabase.storage.from('avatars').download(path);
         if (error) {
-          throw error;
+          console.error('Error downloading avatar image:', error);
+          return;
         }
 
-        const url = URL.createObjectURL(data);
-        setAvatarUrl(url);
+        const imageUrl = URL.createObjectURL(data);
+        setAvatarUrl(imageUrl);
       } catch (error) {
-        console.log('Error downloading image: ', error);
+        console.error('Unexpected error downloading image:', error);
       }
     }
 
-    if (url) downloadImage(url);
+    if (url) {
+      downloadImage(url);
+    }
   }, [url, supabase]);
 
   const uploadAvatar: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
@@ -45,6 +45,10 @@ export default function Avatar({
 
       if (!event.target.files || event.target.files.length === 0) {
         throw new Error('You must select an image to upload.');
+      }
+
+      if (!uid) {
+        throw new Error('User ID is required for avatar upload.');
       }
 
       const file = event.target.files[0];
@@ -59,9 +63,9 @@ export default function Avatar({
 
       onUpload(filePath);
     } catch (error) {
-      console.log('!!! ERROR:', String(error));
-
-      alert('Error uploading avatar!');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Avatar upload error:', errorMessage);
+      alert(`Error uploading avatar: ${errorMessage}`);
     } finally {
       setUploading(false);
     }

@@ -122,6 +122,7 @@ create table public.galleries (
     title text not null,
     description text,
     is_public boolean default false,
+    is_default boolean not null default false,
     creator_id uuid not null,
     cover_image_id uuid,
     created_at timestamp with time zone default now(),
@@ -273,6 +274,35 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+--
+-- function to check default gallery title updates
+--
+create function public.check_default_gallery_title_update()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  -- if this is a default gallery and the title is being changed from "Uploads"
+  if new.is_default = true and old.is_default = true and old.title = 'Uploads' and new.title != 'Uploads' then
+    raise exception 'Cannot change the title of the default "Uploads" gallery. Default galleries must maintain their original title.';
+  end if;
+
+  -- if a gallery is being set as default, ensure it has the correct title
+  if new.is_default = true and new.title != 'Uploads' then
+    raise exception 'Default galleries must have the title "Uploads".';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger enforce_default_gallery_title_trigger
+  before update on public.galleries
+  for each row
+  execute function public.check_default_gallery_title_update();
 
 
 --

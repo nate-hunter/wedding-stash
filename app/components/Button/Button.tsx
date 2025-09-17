@@ -3,7 +3,7 @@ import Link, { LinkProps } from 'next/link';
 
 import { cN } from '@/utils/classname-builder';
 
-import { Variant, VariantBG, VariantShape, VariantSize } from '@/app/styles/types';
+import type { Variant, VariantBG, VariantShape, VariantSize } from '@/app/styles/types';
 
 // TODO: Better handle Links?
 

@@ -1,50 +1,58 @@
 /* ------------------------------ Navigation - Swiss Design ------------------------------ */
 .nav-bar {
-  height: 64px;
+  /* height: 64px; */
   top: 0;
   position: sticky;
-  display: flex-inline;
-  align-items: center;
-  justify-content: space-between;
-  background-color: var(--surface-color-light);
-  border-bottom: 1px solid var(--border-color-app);
-  backdrop-filter: blur(8px);
-  z-index: 50;
-}
-
-.nav-container {
-  height: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 2rem;
+  /* padding: 0 var(--spacing-7); */
+  /* padding: var(--spacing-4) var(--spacing-7); */
+  column-gap: var(--spacing-6);
+
+  align-items: center;
+  background-color: var(--background);
+  /* backdrop-filter: blur(8px); */
+  border-bottom: 1px solid var(--color-primary-100);
+  /* border-bottom: 1px solid var(--color-primary-200); */
+  /* border-bottom: 1px solid var(--color-border); */
+  z-index: 9999;
 }
 
 .nav-brand {
+  width: max-content;
   font-family: var(--font-playfair);
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--color-ocean-midnight);
+  font-size: var(--font-size-nav-brand);
+  line-height: var(--font-line-height-nav-brand);
+  font-weight: var(--font-weight-nav-brand);
+  color: var(--color-font);
   text-decoration: none;
+  min-width: fit-content;
   letter-spacing: -0.025em;
   transition: color 0.2s ease;
+  text-transform: uppercase;
 }
 
 .nav-brand:hover {
-  color: var(--color-sunset-gold-500);
+  color: var(--color-primary);
 }
 
 .nav-links {
   display: flex;
+  /* MOBILE-FIRST */
+  flex-direction: column;
+  /* DESKTOP-FIRST */
+  /* flex-direction: row;
   align-items: center;
-  gap: 2rem;
+  gap: var(--spacing-7); */
 }
 
 .nav-link {
-  font-family: var(--font-inter);
-  font-size: 0.875rem;
+  font-family: var(--font-garet);
+  font-size: var(--font-size-nav-link);
   font-weight: 500;
-  color: var(--color-ocean-midnight);
+  line-height: var(--font-size-nav-link);
+  color: var(--color-font);
   text-decoration: none;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -53,8 +61,23 @@
   transform: translateY(3px);
 }
 
+.nav-link:before {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-primary);
+  transition: width 0.2s ease;
+}
+
+.nav-link:hover::before {
+  width: 100%;
+}
+
 .nav-link:hover {
-  color: var(--color-sunset-gold-500);
+  color: var(--color-primary-400);
 }
 
 .nav-link::after {
@@ -64,7 +87,7 @@
   left: 0;
   width: 0;
   height: 2px;
-  background-color: var(--color-sunset-gold);
+  background-color: var(--color-primary);
   transition: width 0.2s ease;
 }
 
@@ -72,40 +95,29 @@
   width: 100%;
 }
 
+.nav-link-active {
+  /* color: var(--color-primary-400); */
+  color: var(--color-primary-300);
+  font-weight: 700;
+}
+
+.nav-link-active:hover::after,
+.nav-link-active:hover::before {
+  width: 0%;
+}
+
 .nav-form {
   display: inline;
 }
 
-/* ------------------------------ Navigation - Button ------------------------------ */
-.nav-button {
-  font-family: var(--font-inter);
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-ocean-midnight);
-  background: none;
-  border: none;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  transition: color 0.2s ease;
-  position: relative;
-}
+.nav-user {
+  padding: var(--spacing-4) 0;
 
-.nav-button:hover {
-  color: var(--color-sunset-gold-500);
-}
-
-.nav-button::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background-color: var(--color-sunset-gold);
-  transition: width 0.2s ease;
-}
-
-.nav-button:hover::after {
-  width: 100%;
+  font-family: var(--font-thicccboi);
+  font-weight: 950;
+  line-height: 1.15;
+  /* color: var(--color-tertiary); */
+  color: var(--color-font-tertiary);
+  /* transform: translateY(3px); */
+  align-self: center;
 }
