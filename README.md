@@ -1,10 +1,18 @@
 # WEDDING STASH
 
+## About
+
+## Architecture
+
+- Media file upload, storage, and delivery
+
 ## Tools + Technologies Used:
 
-- Next.JS
-- Supabase
-- Google Photos API
+- Next.JS - Client-side React + SSR Components + Server-side routes
+- Supabase - Authentication + Postgres Database + Object Storage
+<!-- - Google Photos API -->
+- ImageKit - Media File delivery + transformations + optimizations + pre-uploads for thumbnails
+- Tailwind 4 - App styling + themeing + components
 
 ## Getting Started
 

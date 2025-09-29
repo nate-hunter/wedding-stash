@@ -175,6 +175,7 @@
   /* Primary */
   --color-primary-source: hsl(37, 68%, 71%);
   --color-primary-monochrome: #cf9d4c;
+  --color-primary: oklch(83.121% 0.08986 78.206);
   --color-primary: #e8c184;
   --color-primary-950: #1b0800;
   --color-primary-900: #311900;
@@ -207,6 +208,7 @@
   --color-tertiary-source: #9681ff;
   --color-tertiary-monochrome: #6146e6;
   --color-tertiary: #9681ff;
+  --color-tertiary: oklch(68.009% 0.18015 288.316);
   --color-tertiary-950: #12003d;
   --color-tertiary-900: #23005e;
   --color-tertiary-800: #36127e;
