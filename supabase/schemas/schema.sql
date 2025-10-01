@@ -167,7 +167,15 @@ create table public.media_items (
 
     project_name text default 'WEDDING_STASH',
     created_at timestamp with time zone default now(),
-    updated_at timestamp with time zone default now()
+    updated_at timestamp with time zone default now(),
+
+    -- imagekit integration fields (added for heic support and cdn delivery)
+    imagekit_file_id varchar(255),
+    imagekit_url text,
+    thumbnail_url text,
+    original_format varchar(20),
+    was_converted boolean default false,
+    conversion_metadata jsonb
 );
 
 --
@@ -220,6 +228,14 @@ comment on column public.media_items.media_type is 'Generated column that catego
 comment on column public.media_items.google_photos_id is 'Optional Google Photos media item ID if synced to Google Photos.';
 comment on column public.media_items.project_name is 'Project identifier for organizing media across different applications.';
 
+-- imagekit integration column comments
+comment on column public.media_items.imagekit_file_id is 'ImageKit unique file identifier for API operations and CDN delivery.';
+comment on column public.media_items.imagekit_url is 'ImageKit CDN URL for optimized delivery and transformations.';
+comment on column public.media_items.thumbnail_url is 'ImageKit thumbnail URL with wedding-optimized transformations.';
+comment on column public.media_items.original_format is 'Original file format before any conversion (e.g., heic, jpeg, png).';
+comment on column public.media_items.was_converted is 'True if file was converted from original format (e.g., HEIC to JPEG).';
+comment on column public.media_items.conversion_metadata is 'JSON metadata for conversion process, quality settings, and processing time.';
+
 alter table public.gallery_media_items add constraint gallery_media_items_gallery_id_fkey foreign key (gallery_id) references public.galleries(id) on delete cascade;
 alter table public.gallery_media_items add constraint gallery_media_items_media_item_id_fkey foreign key (media_item_id) references public.media_items(id) on delete cascade;
 alter table public.gallery_media_items add constraint gallery_media_items_added_by_fkey foreign key (added_by) references public.profiles(id) on delete set null;
@@ -244,6 +260,11 @@ create index idx_media_items_media_type on public.media_items(media_type);
 create index idx_media_items_created_at on public.media_items(created_at desc);
 create index idx_media_items_file_path on public.media_items(file_path);
 create index idx_media_items_google_photos_id on public.media_items(google_photos_id) where google_photos_id is not null;
+
+-- imagekit integration indexes for performance optimization
+create index idx_media_items_imagekit_file_id on public.media_items(imagekit_file_id) where imagekit_file_id is not null;
+create index idx_media_items_was_converted on public.media_items(was_converted) where was_converted = true;
+create index idx_media_items_original_format on public.media_items(original_format) where original_format is not null;
 
 create index idx_gallery_media_items_gallery_id on public.gallery_media_items(gallery_id);
 create index idx_gallery_media_items_media_item_id on public.gallery_media_items(media_item_id);
