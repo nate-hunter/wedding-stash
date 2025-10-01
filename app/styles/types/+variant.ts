@@ -16,6 +16,22 @@ export type VariantBG = 'default' | 'transparent' | 'inverted';
 
 export type VariantSize = 'xxs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 
-export type VariantMode = 'onDark' | 'onDarkAlt' | 'onLight' | 'onLightAlt' | 'on-default' | 'on-alt';
+export type VariantMode =
+  | 'onDark'
+  | 'onDarkAlt'
+  | 'onLight'
+  | 'onLightAlt'
+  | 'on-default'
+  | 'on-alt';
 
 export type VariantShape = 'sharp' | 'straight' | 'curved' | 'rounded' | 'pill';
+
+export type VariantState =
+  | 'default'
+  | 'idle'
+  | 'loading'
+  | 'active'
+  | 'disabled'
+  | 'hover'
+  | 'focus'
+  | 'downloading';

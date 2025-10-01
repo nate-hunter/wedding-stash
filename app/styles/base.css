@@ -1,7 +1,4 @@
-/* Base styles and resets */
-/*  CSS reset */
-
-/* TODO: Can this file be updated / cleaned up? */
+/* @import 'tailwindcss'; */
 
 @layer base {
   *,
@@ -20,26 +17,222 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-
-    /* min-block-size: 100vh; */
-    /* color-scheme: dark; */
-    /* color-scheme: light dark; */
-    /* background-color: var(--surface-color-light); */
-    /* background-color: var(--surface-color-dark); */
-    /* color: var(--font-color); */
-    /* color: var(--font-on-dark); */
-    /* color: var(--font-on-light); */
-    /* font: var(--font-body-md); */
+    min-block-size: 100vh;
   }
 
   /* Focus styles for accessibility */
   *:focus-visible {
-    outline: 2px solid var(--color-sunset-gold-500);
+    outline: 2px solid var(--color-tertiary);
     outline-offset: 2px;
   }
 
   /* Remove focus outline for mouse users */
   *:focus:not(:focus-visible) {
     outline: none;
+  }
+
+  .font-sans {
+    font-family: var(--font-wonder), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  .font-serif {
+    font-family: var(--font-playfair), ui-serif, Georgia, serif;
+  }
+
+  /* Typography utilities */
+  .text-banner {
+    font-family: var(--font-playfair), ui-serif, Georgia, serif;
+    font-size: var(--font-size-banner);
+    line-height: var(--font-line-height-banner);
+    font-weight: var(--font-weight-banner);
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+    /* min-width: fit-content; */
+  }
+
+  .text-display {
+    font-family: var(--font-playfair), ui-serif, Georgia, serif;
+    font-size: var(--font-size-display);
+    line-height: var(--font-line-height-display);
+    font-weight: var(--font-weight-display);
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+  }
+
+  .text-title-lg {
+    font-family: var(--font-playfair), ui-serif, Georgia, serif;
+    font-size: var(--font-size-title-lg);
+    line-height: var(--font-line-height-title-lg);
+    font-weight: var(--font-weight-title-lg);
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+  }
+
+  .text-title-sm {
+    font-family: var(--font-playfair), ui-serif, Georgia, serif;
+    font-size: var(--font-size-title-sm);
+    line-height: var(--font-line-height-title-sm);
+    font-weight: var(--font-weight-title-sm);
+    text-transform: uppercase;
+    letter-spacing: -0.025em;
+  }
+
+  .text-heading {
+    font-family: var(--font-playfair), ui-serif, Georgia, serif;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+
+  .text-body {
+    font-family: var(--font-wonder), ui-sans-serif, system-ui, sans-serif;
+    font-weight: 400;
+    line-height: 1.625;
+  }
+
+  .text-caption {
+    font-family: var(--font-wonder), ui-sans-serif, system-ui, sans-serif;
+    font-size: var(--font-size-sm);
+    color: var(--color-font-onlight-secondary);
+  }
+
+  h1,
+  .hd-1 {
+    font-family: var(--font-wonder);
+    font-size: var(--font-size-h1);
+    line-height: var(--font-line-height-h1);
+    font-weight: var(--font-weight-h1);
+    /* letter-spacing: -0.025em; */
+  }
+
+  h2,
+  .hd-2 {
+    font-family: var(--font-wonder);
+    font-size: var(--font-size-h2);
+    line-height: var(--font-line-height-h2);
+    font-weight: var(--font-weight-h2);
+    /* color: var(--font-fam-color); */
+    /* letter-spacing: -0.025em; */
+  }
+
+  h3,
+  .hd-3 {
+    font-family: var(--font-wonder);
+    font-size: var(--font-size-h3);
+    line-height: var(--font-line-height-h3);
+    font-weight: var(--font-weight-h3);
+    /* letter-spacing: -0.025em; */
+  }
+
+  h4,
+  .hd-4 {
+    font-family: var(--font-wonder);
+    font-size: var(--font-size-h4);
+    line-height: var(--font-line-height-h4);
+    font-weight: var(--font-weight-h4);
+    /* letter-spacing: -0.025em; */
+  }
+
+  h5,
+  .hd-5 {
+    font-family: var(--font-wonder);
+    font-size: var(--font-size-h5);
+    line-height: var(--font-line-height-h5);
+    font-weight: var(--font-weight-h5);
+    /* letter-spacing: -0.025em; */
+  }
+
+  h6,
+  .hd-6 {
+    font-family: var(--font-wonder);
+    font-size: var(--font-size-h6);
+    line-height: var(--font-line-height-h6);
+    font-weight: var(--font-weight-h6);
+    /* letter-spacing: -0.025em; */
+  }
+
+  p,
+  .p {
+    font-family: var(--font-wonder);
+    /* font-size: clamp(0.875rem, 1.333vw + 1rem, 1rem); */
+    font-size: var(--font-size-body);
+    line-height: var(--font-line-height-body);
+    font-weight: var(--font-weight-body);
+    /* letter-spacing: -0.025em; */
+  }
+
+  button,
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    column-gap: var(--spacing-4);
+    padding: var(--spacing-5) var(--spacing-6);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-thicccboi);
+    font-weight: 800;
+    font-size: 0.875rem;
+    line-height: 1.15;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+  }
+
+  button:hover {
+    background-color: var(--color-surface-100);
+    /* background-color: var(--color-secondary-100); */
+    border-color: var(--color-secondary-200);
+    color: var(--color-secondary-800);
+  }
+
+  .btn {
+    color: var(--color-font-ondark);
+    /* background-color: var(--color-secondary); */
+    background-color: var(--color-surface-800);
+    border-color: var(--color-surface-800);
+  }
+
+  .btn:hover {
+    background-color: var(--color-surface-900);
+    border-color: var(--color-surface-900);
+    color: var(--color-font-ondark);
+  }
+
+  /* button:focus,
+  .btn:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--color-tertiary-200);
+  } */
+
+  /* button:focus,
+  .btn:focus {
+    outline: 0;
+    } */
+
+  button:focus-visible,
+  .btn:focus-visible {
+    /* border-color: var(--color-primary-300); */
+    outline: 0;
+    /* border-color: var(--color-tertiary-200); */
+    box-shadow: 0 0 0 3px var(--color-tertiary-200);
+    border-radius: var(--radius-sm);
+  }
+
+  button:disabled,
+  .btn:disabled {
+    /* background-color: var(--color-secondary-100);
+    color: var(--color-secondary-700);
+    border-color: var(--color-secondary-100); */
+    /* filter: grayscale(70%); */
+    filter: grayscale(50%);
+    opacity: 0.75;
+    cursor: not-allowed;
+  }
+
+  button:active svg,
+  .btn:active svg {
+    transform: scale(0.9);
   }
 }

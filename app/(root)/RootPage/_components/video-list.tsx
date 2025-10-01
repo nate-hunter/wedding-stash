@@ -36,11 +36,11 @@ const VIDEOS: Array<Video> = [
 
 export default function VideoList() {
   return (
-    <div className='my-sp0'>
-      <div className='flex flex-col gap-sp2'>
-        {VIDEOS.map((video) => (
+    <div className='my-sp6'>
+      <div className='flex flex-col gap-sp9'>
+        {VIDEOS.map((video, i) => (
           <ReactPlayer
-            key={video.id}
+            key={`${i + 1}_${video.id}`}
             src={video.url}
             controls
             style={{ width: '100%', height: 'auto', aspectRatio: '16/9' }}

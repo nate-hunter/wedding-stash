@@ -11,7 +11,11 @@ export default async function HomePage() {
 
   return (
     <div className='min-h-screen surface-bg'>
-      <div className='max-w-4xl mx-auto px-sp0 py-sp0'>
+      <div className='text-center'>
+        <h1 className='text-banner'>Wedding Memories</h1>
+      </div>
+
+      <div className='max-w-4xl mx-auto p-8'>
         <RootPage user={user} />
       </div>
     </div>
