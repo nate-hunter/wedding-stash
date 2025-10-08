@@ -101,6 +101,57 @@ export interface MediaItemUploadData {
   height?: number;
 }
 
+// Enhanced metadata types (for unified upload system)
+export interface ClientExtractedMetadata {
+  // Dimensions
+  width?: number;
+  height?: number;
+
+  // Geolocation (from EXIF)
+  lat?: number;
+  lon?: number;
+
+  // Camera information (from EXIF)
+  camera_make?: string;
+  camera_model?: string;
+
+  // Timestamps
+  date_taken?: string; // ISO 8601 format from client
+
+  // Complete EXIF data (for future extensibility)
+  exif_data?: Record<string, unknown>;
+}
+
+// Type for finalize-upload request body
+export interface FinalizeUploadRequest extends ClientExtractedMetadata {
+  // Required fields
+  path: string;
+  filename: string;
+  mime_type: string;
+  file_size: number;
+
+  // Optional fields
+  title?: string;
+  description?: string;
+
+  // ImageKit preview cleanup (for HEIC files)
+  imagekit_preview_file_id?: string;
+}
+
+// Type for request-upload-url request body
+export interface RequestUploadUrlBody {
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+}
+
+// Type for request-upload-url response
+export interface RequestUploadUrlResponse {
+  signedUrl: string;
+  path: string;
+  token: string;
+}
+
 // Storage-related types
 export interface SignedUrlData {
   signedUrl: string;
