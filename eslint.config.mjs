@@ -14,6 +14,25 @@ const eslintConfig = [
   {
     // Ignore "Sand Box" files
     ignores: ['__sb/', '**/__sb/**', '**/*.sb.*', '*.sb.*'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/ban-ts-comment': 'warn',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        // 'error',
+        {
+          args: 'all',
+          argsIgnorePattern: '^_',
+          caughtErrors: 'all',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+          // varsIgnorePattern: '^__',
+          varsIgnorePattern: '[__]',
+          ignoreRestSiblings: true,
+        },
+      ],
+    },
   },
 ];
 
