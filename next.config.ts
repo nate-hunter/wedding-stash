@@ -57,6 +57,11 @@ const nextConfig: NextConfig = {
         hostname: 'photoslibrary.googleapis.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'ik.imagekit.io',
+        pathname: '/tig3rm4c/**',
+      },
     ],
   },
 };
