@@ -248,6 +248,20 @@ comment on column public.media_items.original_format is 'Original file format be
 comment on column public.media_items.was_converted is 'True if file was converted from original format (e.g., HEIC to JPEG).';
 comment on column public.media_items.conversion_metadata is 'JSON metadata for conversion process, quality settings, and processing time.';
 
+-- enhanced metadata column comments
+comment on column public.media_items.lat is 'Latitude coordinate extracted from EXIF data for geotagged media.';
+comment on column public.media_items.lon is 'Longitude coordinate extracted from EXIF data for geotagged media.';
+comment on column public.media_items.exif_data is 'Complete EXIF metadata extracted from media file on client-side.';
+comment on column public.media_items.location_name is 'Human-readable location name derived from reverse geocoding lat/lon coordinates.';
+comment on column public.media_items.camera_make is 'Camera manufacturer extracted from EXIF data.';
+comment on column public.media_items.camera_model is 'Camera model extracted from EXIF data.';
+comment on column public.media_items.date_taken is 'Original capture date/time extracted from EXIF data, preferred over upload timestamp.';
+comment on column public.media_items.source is 'Content source type: "user" for direct uploads, "vendor" for third-party content.';
+
+-- enhanced metadata constraint
+alter table public.media_items
+  add constraint check_media_item_source check (source in ('user', 'vendor'));
+
 alter table public.gallery_media_items add constraint gallery_media_items_gallery_id_fkey foreign key (gallery_id) references public.galleries(id) on delete cascade;
 alter table public.gallery_media_items add constraint gallery_media_items_media_item_id_fkey foreign key (media_item_id) references public.media_items(id) on delete cascade;
 alter table public.gallery_media_items add constraint gallery_media_items_added_by_fkey foreign key (added_by) references public.profiles(id) on delete set null;
