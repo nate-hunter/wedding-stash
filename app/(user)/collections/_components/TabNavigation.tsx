@@ -3,10 +3,10 @@ import React from 'react';
 import { TabNavigationProps, TabOption } from '../types';
 
 const TAB_CONFIG: Array<{ key: TabOption; label: string }> = [
-  { key: 'my-uploads', label: 'My Uploads' },
-  { key: 'galleries', label: 'Galleries' },
-  { key: 'likes', label: 'Likes' },
-  { key: 'downloads', label: 'Downloads' },
+  { key: 'my-uploads', label: 'Uploaded' },
+  // { key: 'galleries', label: 'Galleries' },
+  // { key: 'likes', label: 'Likes' },
+  // { key: 'downloads', label: 'Downloads' },
 ];
 
 export function TabNavigation({ currentTab, onTabChange }: TabNavigationProps) {
