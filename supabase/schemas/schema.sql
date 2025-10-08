@@ -175,7 +175,19 @@ create table public.media_items (
     thumbnail_url text,
     original_format varchar(20),
     was_converted boolean default false,
-    conversion_metadata jsonb
+    conversion_metadata jsonb,
+
+    -- enhanced metadata fields (added for unified upload system)
+    lat decimal(10, 8),
+    lon decimal(11, 8),
+    exif_data jsonb,
+    location_name text,
+    camera_make text,
+    camera_model text,
+    date_taken timestamp with time zone,
+
+    -- content source differentiation
+    source text not null default 'user'
 );
 
 --
