@@ -2,7 +2,6 @@
 
 import React from 'react';
 import type { UploadFile } from '../hooks/useUnifiedUpload';
-import { FileItem } from './FileItem';
 import { MediaFileItem } from './MediaFileItem';
 import { formatFileSize } from '@/utils/file-helpers';
 import '../upload-media-items.css';
