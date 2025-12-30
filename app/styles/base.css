@@ -1,5 +1,3 @@
-/* @import 'tailwindcss'; */
-
 @layer base {
   *,
   *::before,
@@ -91,17 +89,17 @@
 
   .text-caption {
     font-family: var(--font-wonder), ui-sans-serif, system-ui, sans-serif;
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-caption);
     color: var(--color-font-onlight-secondary);
   }
 
+  /* TODO: Add `text-h1`? */
   h1,
   .hd-1 {
     font-family: var(--font-wonder);
     font-size: var(--font-size-h1);
     line-height: var(--font-line-height-h1);
     font-weight: var(--font-weight-h1);
-    /* letter-spacing: -0.025em; */
   }
 
   h2,
@@ -110,8 +108,6 @@
     font-size: var(--font-size-h2);
     line-height: var(--font-line-height-h2);
     font-weight: var(--font-weight-h2);
-    /* color: var(--font-fam-color); */
-    /* letter-spacing: -0.025em; */
   }
 
   h3,
@@ -120,7 +116,6 @@
     font-size: var(--font-size-h3);
     line-height: var(--font-line-height-h3);
     font-weight: var(--font-weight-h3);
-    /* letter-spacing: -0.025em; */
   }
 
   h4,
@@ -129,7 +124,6 @@
     font-size: var(--font-size-h4);
     line-height: var(--font-line-height-h4);
     font-weight: var(--font-weight-h4);
-    /* letter-spacing: -0.025em; */
   }
 
   h5,
@@ -138,7 +132,6 @@
     font-size: var(--font-size-h5);
     line-height: var(--font-line-height-h5);
     font-weight: var(--font-weight-h5);
-    /* letter-spacing: -0.025em; */
   }
 
   h6,
@@ -147,17 +140,14 @@
     font-size: var(--font-size-h6);
     line-height: var(--font-line-height-h6);
     font-weight: var(--font-weight-h6);
-    /* letter-spacing: -0.025em; */
   }
 
   p,
   .p {
     font-family: var(--font-wonder);
-    /* font-size: clamp(0.875rem, 1.333vw + 1rem, 1rem); */
     font-size: var(--font-size-body);
     line-height: var(--font-line-height-body);
     font-weight: var(--font-weight-body);
-    /* letter-spacing: -0.025em; */
   }
 
   button,
@@ -182,14 +172,12 @@
 
   button:hover {
     background-color: var(--color-surface-100);
-    /* background-color: var(--color-secondary-100); */
     border-color: var(--color-secondary-200);
     color: var(--color-secondary-800);
   }
 
   .btn {
     color: var(--color-font-ondark);
-    /* background-color: var(--color-secondary); */
     background-color: var(--color-surface-800);
     border-color: var(--color-surface-800);
   }
@@ -200,32 +188,15 @@
     color: var(--color-font-ondark);
   }
 
-  /* button:focus,
-  .btn:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px var(--color-tertiary-200);
-  } */
-
-  /* button:focus,
-  .btn:focus {
-    outline: 0;
-    } */
-
   button:focus-visible,
   .btn:focus-visible {
-    /* border-color: var(--color-primary-300); */
     outline: 0;
-    /* border-color: var(--color-tertiary-200); */
     box-shadow: 0 0 0 3px var(--color-tertiary-200);
     border-radius: var(--radius-sm);
   }
 
   button:disabled,
   .btn:disabled {
-    /* background-color: var(--color-secondary-100);
-    color: var(--color-secondary-700);
-    border-color: var(--color-secondary-100); */
-    /* filter: grayscale(70%); */
     filter: grayscale(50%);
     opacity: 0.75;
     cursor: not-allowed;

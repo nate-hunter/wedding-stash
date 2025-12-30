@@ -1,3 +1,5 @@
+/***** TODO: Cleanup comments + unused styles *****/
+
 @theme inline {
   /* ++++++++++++++++++++++++ TYPOGRAPHY ++++++++++++++++++++++++ */
   --font-sans: var(--font-wonder);
@@ -130,6 +132,11 @@
   --radius-2xl: var(--spacing-sp7);
   --radius-3xl: var(--spacing-sp8);
   --radius-4xl: var(--spacing-sp9);
+
+  --radius-straight: var(--radius-sm);
+  --radius-curved: var(--radius-lg);
+  --radius-rounded: var(--radius-xl);
+  --radius-pill: 9999px;
 
   /* ++++++++++++++++++++++++ COLORS ++++++++++++++++++++++++ */
   /* --color-*: initial; */

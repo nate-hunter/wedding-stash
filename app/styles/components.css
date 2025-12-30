@@ -1,3 +1,5 @@
+/***** TODO: Cleanup comments + unused styles *****/
+
 @layer components {
   /**************************************************************************************
   * BUTTON *
@@ -150,6 +152,52 @@
     background-color: var(--color-tertiary-100);
     color: var(--color-tertiary-700);
   }
+
+  /* SUCCESS */
+  .btn-success {
+    border-color: var(--color-success);
+    background-color: var(--color-success);
+    color: var(--color-font-ondark);
+  }
+
+  .btn-success:hover {
+    background-color: var(--color-success-400);
+    border-color: var(--color-success-400);
+  }
+
+  .btn-success-inverted,
+  .btn-success.btn-inverted {
+    border-color: var(--color-success-50);
+    background-color: var(--color-success-50);
+    color: var(--color-success-600);
+  }
+
+  .btn-success-inverted:hover {
+    background-color: var(--color-success-100);
+    border-color: var(--color-success-100);
+    color: var(--color-success-700);
+  }
+
+  .btn-success-transparent,
+  .btn-success.btn-transparent {
+    border-color: transparent;
+    background-color: transparent;
+    color: var(--color-success);
+  }
+
+  .btn-success.btn-transparent:hover,
+  .btn-success-transparent:hover {
+    background-color: var(--color-success-50);
+    border-color: var(--color-success-50);
+    color: var(--color-success-600);
+  }
+
+  .btn-success-outlined,
+  .btn-success.btn-transparent.btn-outlined {
+    border-color: var(--color-success);
+    color: var(--color-success);
+  }
+
   /* DANGER */
   .btn-danger {
     border-color: var(--color-danger);
@@ -162,7 +210,8 @@
     border-color: var(--color-danger-400);
   }
 
-  .btn-danger-inverted {
+  .btn-danger-inverted,
+  .btn-danger.btn-inverted {
     border-color: var(--color-danger-50);
     background-color: var(--color-danger-50);
     color: var(--color-danger-600);
@@ -172,6 +221,26 @@
     background-color: var(--color-danger-100);
     border-color: var(--color-danger-100);
     color: var(--color-danger-700);
+  }
+
+  .btn-danger-transparent,
+  .btn-danger.btn-transparent {
+    border-color: transparent;
+    background-color: transparent;
+    color: var(--color-danger);
+  }
+
+  .btn-danger.btn-transparent:hover,
+  .btn-danger-transparent:hover {
+    background-color: var(--color-danger-50);
+    border-color: var(--color-danger-50);
+    color: var(--color-danger-600);
+  }
+
+  .btn-danger-outlined,
+  .btn-danger.btn-transparent.btn-outlined {
+    border-color: var(--color-danger);
+    color: var(--color-danger);
   }
 
   /* ------------------------------ BUTTON SIZE VARIANTS ------------------------------ */
@@ -269,7 +338,7 @@
     background-color: var(--overlay);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    font-family: var(--font-sans);
+    font-family: var(--font-wonder);
     transition: all 0.2s ease;
     font-size: var(--font-size-form-value);
     letter-spacing: 5%;
