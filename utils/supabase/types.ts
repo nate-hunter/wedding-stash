@@ -1,8 +1,8 @@
 import { Database, Tables, TablesInsert, TablesUpdate } from '@/types/supabase';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/utils/supabase/client';
 
-// Type-safe client type
-export type TypedSupabaseClient = SupabaseClient<Database>;
+// Type-safe client type - matches the exact return type of createClient()
+export type TypedSupabaseClient = ReturnType<typeof createClient>;
 
 // Common API response types
 export interface ApiResponse<T = null> {
