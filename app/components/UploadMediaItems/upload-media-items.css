@@ -1,0 +1,555 @@
+/***** TODO: Cleanup comments/unused styles *****/
+
+/* ============================================================================
+ * UploadMediaItems Component Styles
+ * ============================================================================ */
+
+.upload-media-items {
+  /* width: clamp(300px, 275px + 30vw, 700px); */
+  /* width: clamp(1.5rem, 3vw + 1rem, 2.5rem); */
+  /* min-width: clamp(300px, 20vw + 350px, 700px); */
+  min-width: 300px;
+  /* max-width: 700px; */
+  max-width: 100%;
+
+  /* width: max-content; */
+  width: 550px;
+  /* width: 700px; */
+  /* max-width: calc(100% - 48px); */
+
+  /* width: fit-content; */
+  /* max-width: 700px; */
+  /* width: 100%; */
+  /* width: fit-content; */
+  /* background-color: pink; */
+}
+
+/* ----------------------------------------------------------------------------
+ * Dropzone
+ * ---------------------------------------------------------------------------- */
+
+.dropzone-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-6);
+  min-height: var(--spacing-10); /* ~109.66px, spacious drop area */
+  /* Touch-friendly minimum height on mobile */
+  min-height: 120px;
+  padding: var(--spacing-6);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+/* Larger drop area on tablet and desktop */
+@media (min-width: 640px) {
+  .dropzone-container {
+    min-height: var(--spacing-10); /* ~109.66px */
+  }
+}
+
+.dropzone-container--active {
+  border-color: var(--color-tertiary);
+  background-color: var(--color-tertiary-50);
+  opacity: 0.5;
+}
+
+.dropzone-container--disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.dropzone-container:not(.dropzone-container--disabled):hover {
+  border-color: var(--color-primary-400);
+  background-color: var(--color-primary-50);
+}
+
+.dropzone-icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-9); /* ~67.77px */
+  height: var(--spacing-9);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+}
+
+/* ----------------------------------------------------------------------------
+ * FileItem Card
+ * ---------------------------------------------------------------------------- */
+
+.file-item-card {
+  position: relative;
+  display: flex;
+  /* Mobile-first: Stack vertically */
+  /* flex-direction: column; */
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-5);
+  /* background-color: var(--color-overlay); */
+  background-color: white;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+/* Tablet and desktop: horizontal layout */
+/* @media (min-width: 640px) {
+  .file-item-card {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+} */
+
+/* State variants */
+.file-item-card--failed {
+  background-color: var(--color-danger-50);
+  border-color: var(--color-danger-300);
+}
+
+.file-item-card--completed {
+  background-color: var(--color-success-50);
+  border-color: var(--color-success-300);
+}
+
+/* ----------------------------------------------------------------------------
+ * FileItem Thumbnail
+ * ---------------------------------------------------------------------------- */
+
+.file-item-thumbnail {
+  flex-shrink: 0;
+  width: 5rem; /* 96px - prominent preview size matching wireframe */
+  height: 5rem;
+  /* --size-thumb: calc(68px + 26px);  */
+  --size-thumb: calc(87px);
+  /* --size-thumb: calc(84px); */
+  width: var(--size-thumb);
+  height: var(--size-thumb);
+}
+
+.file-item-thumbnail img,
+.file-item-thumbnail > div {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+}
+
+/* ----------------------------------------------------------------------------
+ * FileItem Info
+ * ---------------------------------------------------------------------------- */
+
+.file-item-info {
+  flex: 1;
+  min-width: 0;
+  /* height: 5rem; */
+
+  display: flex;
+  flex-direction: column;
+  /* column-gap: var(--spacing-3); */
+  justify-content: space-between;
+  /* background-color: pink; */
+}
+
+/* ----------------------------------------------------------------------------
+ * FileItem Title Input
+ * ---------------------------------------------------------------------------- */
+
+.file-item-title-input {
+  /* width: 100%; */
+  /* padding: var(--spacing-3) var(--spacing-2); */
+  /* padding: var(--spacing-3) 0; */
+  /* Touch-friendly minimum height */
+  /* min-height: 42px; */
+  font-size: var(--font-size-body);
+  font-weight: 500;
+  color: var(--color-font-onlight-disabled);
+  /* color: var(--color-font); */
+  background: transparent;
+  /* background-color: pink; */
+  border: none;
+  /* border-bottom: 2px solid transparent; */
+  border-bottom: 1px solid transparent;
+  /* border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0; */
+  /* border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm); */
+  /* outline: none; */
+  /* transition: all 0.2s ease; */
+}
+
+/* Display state - no edit indication */
+.file-item-title-input:read-only,
+.file-item-title-input:disabled {
+  color: var(--color-font);
+  cursor: default;
+  /* border-bottom-color: transparent; */
+  border-bottom: 1px solid var(--color-surface-200);
+  /* border-bottom: 1px solid var(--color-surface-50); */
+  /* border-radius: var(--radius-sm); */
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Editable state - show underline */
+.file-item-title-input:not(:disabled) {
+  /* border-bottom-color: var(--color-border); */
+  /* cursor: text; */
+  cursor: pointer;
+}
+
+/* Hover state when editable */
+/* .file-item-title-input:not(:disabled):hover {
+  border-bottom-color: var(--color-primary-400);
+  background-color: var(--color-primary-50);
+} */
+
+/* Active editing state */
+.file-item-title-input:focus {
+  /* border-bottom-color: var(--color-tertiary);
+  background-color: var(--color-tertiary-50); */
+}
+
+/* ----------------------------------------------------------------------------
+ * FileItem Actions
+ * ---------------------------------------------------------------------------- */
+
+.file-item-actions {
+  display: flex;
+  /* Horizontal on mobile for better accessibility */
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-2);
+}
+
+/* Desktop: Vertical layout on right side */
+@media (min-width: 640px) {
+  .file-item-actions {
+    flex-direction: column;
+    justify-content: space-between;
+    margin-top: 0;
+    padding-bottom: var(--spacing-2);
+  }
+}
+
+/* Touch-friendly button sizing for mobile */
+.file-item-actions button,
+.file-item-action-btn {
+  min-width: 42px;
+  min-height: 42px;
+  padding: var(--spacing-4); /* Increased from xs/sm variants */
+}
+
+/* ----------------------------------------------------------------------------
+ * FileItem Status Bar
+ * ---------------------------------------------------------------------------- */
+
+.file-item-status-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-2);
+
+  justify-content: flex-end;
+  /* background-color: pink; */
+}
+
+/* Progress bar fills available space, badge stays right */
+/* .file-item-status-bar > *:first-child {
+  flex: 1;
+} */
+
+/* ----------------------------------------------------------------------------
+ * Progress Bar
+ * ---------------------------------------------------------------------------- */
+
+.file-item-progress {
+  width: 100%;
+  height: 0.5rem;
+  background-color: var(--color-secondary-200);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.file-item-progress-fill {
+  height: 100%;
+  transition: all 0.3s ease;
+  border-radius: var(--radius-lg);
+}
+
+.file-item-progress-fill--uploading {
+  background-color: var(--color-tertiary);
+}
+
+.file-item-progress-fill--processing {
+  background-color: var(--color-warning-500);
+}
+
+/* ----------------------------------------------------------------------------
+ * Status Badge
+ * ---------------------------------------------------------------------------- */
+
+.file-item-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  /* padding: var(--spacing-2) var(--spacing-5); */
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+}
+
+/* Status badge variants using semantic colors */
+.file-item-status-badge--pending {
+  /* background-color: var(--color-info-100);
+  color: var(--color-info-800); */
+
+  /* background-color: var(--color-info-100); */
+  color: var(--color-info);
+}
+
+.file-item-status-badge--processing {
+  /* background-color: var(--color-warning-100); */
+  /* color: var(--color-warning-800); */
+  color: var(--color-warning-400);
+}
+
+.file-item-status-badge--uploading {
+  /* background-color: var(--color-tertiary-100);
+  color: var(--color-tertiary-800); */
+  color: var(--color-tertiary-400);
+}
+
+.file-item-status-badge--completed {
+  /* background-color: var(--color-success-100);
+  color: var(--color-success-800); */
+  color: var(--color-success-400);
+}
+
+.file-item-status-badge--failed {
+  background-color: var(--color-danger-100);
+  color: var(--color-danger-800);
+}
+
+/* ----------------------------------------------------------------------------
+ * Error Message
+ * ---------------------------------------------------------------------------- */
+
+.file-item-error {
+  display: flex;
+  align-items: center;
+  column-gap: var(--spacing-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+/* ----------------------------------------------------------------------------
+ * FileList Container
+ * ---------------------------------------------------------------------------- */
+
+.file-list-container {
+  width: 100%;
+}
+
+/* Single-column layout (intentional design decision)
+ * Rationale:
+ * - Maintains scannable vertical flow matching wireframe
+ * - Each file card needs adequate horizontal space for content
+ * - Consistent UX across all screen sizes
+ * - Easier to track upload progress sequentially
+ */
+.file-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-5); /* ~9.88px vertical spacing */
+}
+
+/* Summary bar responsive adjustments */
+.file-list-summary {
+  margin-bottom: var(--spacing-6);
+}
+
+.file-list-summary-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-4);
+}
+
+/* Stack status counts on mobile for better readability */
+@media (max-width: 639px) {
+  .file-list-summary-stats {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+ * UploadItem
+ * ---------------------------------------------------------------------------- */
+
+.upload-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-straight);
+  background-color: var(--color-overlay);
+  transition: all 0.2s ease;
+}
+
+/* Tablet and desktop: horizontal layout */
+/* @media (min-width: 640px) {
+  .upload-item {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+} */
+
+/* State variants */
+.upload-item--failed {
+  background-color: var(--color-danger-50);
+  border-color: var(--color-danger-300);
+}
+
+.upload-item--completed {
+  background-color: var(--color-success-50);
+  border-color: var(--color-success-300);
+}
+
+/* ----------------------------------------------------------------------------
+ * UploadItem - Thumbnail
+ * ---------------------------------------------------------------------------- */
+
+.upload-item-thumbnail {
+  flex-shrink: 0;
+  /* --size-thumb: calc(68px + 26px);  */
+  --size-thumb: calc(87px);
+  width: var(--size-thumb);
+  height: var(--size-thumb);
+}
+
+.upload-item-thumbnail img,
+.upload-item-thumbnail > div {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-straight);
+}
+
+.upload-item-details {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+
+  /* outline: 2px dashed darksalmon; */
+}
+
+/* ----------------------------------------------------------------------------
+ * UploadItem Title Input
+ * ---------------------------------------------------------------------------- */
+.upload-item-title-input {
+  padding-left: var(--spacing-3);
+  font-size: var(--font-size-body);
+  font-weight: 500;
+  /* color: var(--color-font-onlight-disabled); */
+  /* color: var(--color-font); */
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+/* Display state - no edit indication */
+.upload-item-title-input:read-only,
+.upload-item-title-input:disabled {
+  color: var(--color-font);
+  cursor: default;
+  /* border-bottom-color: transparent; */
+  border-bottom: 1px solid var(--color-surface-200);
+  /* border-bottom: 1px solid var(--color-surface-50); */
+  /* border-radius: var(--radius-sm); */
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Editable state - show underline */
+.upload-item-title-input:not(:disabled) {
+  /* border-bottom-color: var(--color-border); */
+  /* cursor: text; */
+  cursor: pointer;
+}
+
+/* Hover state when editable */
+/* .upload-item-title-input:not(:disabled):hover {
+  border-bottom-color: var(--color-primary-400);
+  background-color: var(--color-primary-50);
+} */
+
+/* Active editing state */
+.upload-item-title-input:focus {
+  /* border-bottom-color: var(--color-tertiary);
+  background-color: var(--color-tertiary-50); */
+}
+
+.upload-item-subdetails {
+  display: flex;
+  justify-content: space-between;
+  column-gap: var(--spacing-5);
+  padding-left: var(--spacing-3);
+}
+
+.upload-item-info {
+  flex: 1;
+}
+
+.upload-item-metadata {
+  display: flex;
+  align-items: center;
+  column-gap: var(--spacing-2);
+}
+
+/* ----------------------------------------------------------------------------
+ * Upload File Status
+ * ---------------------------------------------------------------------------- */
+
+.upload-item-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  font-weight: 600;
+
+  /* background-color: khaki; */
+}
+
+.upload-item-status svg {
+  display: inline;
+  transform: translateY(-1px);
+}
+
+.upload-item-status--pending {
+  color: var(--color-info);
+}
+
+.upload-item-status--processing {
+  color: var(--color-warning-400);
+}
+
+.upload-item-status--uploading {
+  color: var(--color-tertiary-400);
+}
+
+.upload-item-status--completed {
+  color: var(--color-success-400);
+}
+
+.upload-item-status--failed {
+  color: var(--color-danger);
+}

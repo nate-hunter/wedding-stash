@@ -6,6 +6,7 @@ import { cN } from '@/utils/classname-builder';
 import type { Variant, VariantBG, VariantShape, VariantSize } from '@/app/styles/types';
 
 // TODO: Better handle Links?
+// TODO: Clean up logs + unused code.
 
 type ButtonProps = React.ComponentPropsWithoutRef<'button'> &
   LinkProps & {
@@ -59,8 +60,24 @@ const Button = React.forwardRef<HTMLButtonElement, Partial<ButtonProps>>(
 
     // ----- BTN CLASSNAME BUILDER -----
     const btnStyles: React.CSSProperties = {};
+    // let wsBtnClassName = cN(
+    //   'ws-btn',
+    //   {
+    //     variant,
+    //     size,
+    //     bg,
+    //     shape,
+    //     isLoading,
+    //     isDisabled,
+    //     isUppercase,
+    //     isBordered,
+    //     asLink,
+    //   },
+    //   'ws-btn__',
+    // );
+
     let btnClassName = cN(
-      'ws-btn',
+      'btn',
       {
         variant,
         size,
@@ -72,7 +89,7 @@ const Button = React.forwardRef<HTMLButtonElement, Partial<ButtonProps>>(
         isBordered,
         asLink,
       },
-      'ws-btn__',
+      'btn-',
     );
 
     // const btnVariant = cN(
@@ -97,6 +114,7 @@ const Button = React.forwardRef<HTMLButtonElement, Partial<ButtonProps>>(
     // console.log(`[ ${text} ] `, '\n-> { btnClassName } =>', btnClassName);
     // console.log('-> { btnVariant } =>', btnVariant);
     // console.log('-> { btnStyles } =>', btnStyles);
+    // console.log('-> { btnClassName } =>', btnClassName);
     // ~~~~~ LOGGING ~~~~~
 
     return (
