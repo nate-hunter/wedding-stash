@@ -1,0 +1,59 @@
+/***** TODO: Fix Modal's width if necessary... make dynamic? *****/
+
+/* Modal Backdrop */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+/* Modal Content */
+.modal-content {
+  background-color: var(--color-background);
+  border-radius: 8px;
+  padding: var(--spacing-7);
+  width: fit-content;
+  max-width: calc(100% - var(--spacing-7) * 2);
+  /* max-width: 500px; */
+  /* width: 100%; */
+  /* max-width: calc(100% - 48px); */
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  column-gap: var(--spacing-sp4);
+  text-transform: capitalize;
+  margin-bottom: var(--spacing-sp6);
+}
+
+.modal-header #modal-title {
+  font-family: var(--font-wonder);
+  font-weight: 900;
+  font-size: clamp(1.5rem, 3vw + 1rem, 2.5rem);
+  line-height: var(--font-line-height-h3);
+  text-transform: uppercase;
+}
+
+/* Native Dialog Styling */
+dialog {
+  border: none;
+  border-radius: 8px;
+  padding: 24px;
+  /* max-width: 500px; */
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}
