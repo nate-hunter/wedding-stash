@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import Navigation from '@/components/Navigation';
+import TopNavbar from '@/app/components/TopNavbar';
 
 import { playfairDisplay, wonderUnitSans, thicccboi, garet, sonoMono } from '@/styles/fonts';
 
@@ -22,7 +22,7 @@ export default function RootLayout({
         className={`${playfairDisplay.variable} ${wonderUnitSans.variable} ${thicccboi.variable} ${garet.variable} ${sonoMono.variable} antialiased`}
         // className={`${inter.variable} ${playfairDisplay.variable} ${wonderUnitSans.variable} ${thicccboi.variable} antialiased`}
       >
-        <Navigation />
+        <TopNavbar />
         <main>{children}</main>
       </body>
     </html>
