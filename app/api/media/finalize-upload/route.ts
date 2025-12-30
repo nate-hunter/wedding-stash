@@ -8,6 +8,7 @@ import {
   DatabaseMediaItem,
 } from '@/utils/supabase/types';
 import { reverseGeocode } from '@/lib/geocoding';
+import { getDefaultTitle } from '@/utils/file-helpers';
 
 /**
  * Finalize Upload Endpoint
@@ -85,7 +86,8 @@ export async function POST(request: NextRequest) {
       file_path: body.path,
       filename: body.filename,
       original_filename: body.filename,
-      title: body.title || body.filename, // Use provided title or default to filename
+      // Use provided title or default to filename without extension
+      title: body.title || getDefaultTitle(body.filename),
       mime_type: body.mime_type,
       file_size: body.file_size,
 
