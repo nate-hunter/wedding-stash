@@ -1,6 +1,6 @@
 import { type IconProps } from '../+types';
 
-export const TableIcon = ({ size = 24, strokeWidth = 2, ...props }: Partial<IconProps>) => {
+export function TableIcon({ size = 24, strokeWidth = 2, ...props }: Partial<IconProps>) {
   return (
     <svg
       viewBox='0 0 24 24'
@@ -22,4 +22,4 @@ export const TableIcon = ({ size = 24, strokeWidth = 2, ...props }: Partial<Icon
       <line x1='3' y1='18' x2='3.01' y2='18'></line>
     </svg>
   );
-};
+}

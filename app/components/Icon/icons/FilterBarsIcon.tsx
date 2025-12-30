@@ -1,6 +1,6 @@
 import { type IconProps } from '../+types';
 
-export const FilterBarsIcon = ({ size = 24, strokeWidth = 0, ...props }: Partial<IconProps>) => {
+export function FilterBarsIcon({ size = 24, strokeWidth = 0, ...props }: Partial<IconProps>) {
   return (
     <svg
       stroke='currentColor'
@@ -16,4 +16,4 @@ export const FilterBarsIcon = ({ size = 24, strokeWidth = 0, ...props }: Partial
       <path d='M6 12v-1h4v1H6zM4 7h8v1H4V7zm10-4v1H2V3h12z'></path>
     </svg>
   );
-};
+}

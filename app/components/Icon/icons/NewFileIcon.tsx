@@ -1,6 +1,6 @@
 import { type IconProps } from '../+types';
 
-export const NewFileIcon = ({ size = 24, color = 'currentColor', ...props }: Partial<IconProps>) => {
+export function NewFileIcon({ size = 24, color = 'currentColor', ...props }: Partial<IconProps>) {
   return (
     <svg
       stroke={color}
@@ -20,4 +20,4 @@ export const NewFileIcon = ({ size = 24, color = 'currentColor', ...props }: Par
       ></path>
     </svg>
   );
-};
+}

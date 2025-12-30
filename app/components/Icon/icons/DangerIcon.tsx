@@ -1,6 +1,10 @@
 import { type IconProps } from '../+types';
 
-export const DangerIcon = ({ size = 24, color = 'var(--color-danger-500)', ...props }: Partial<IconProps>) => {
+export function DangerIcon({
+  size = 24,
+  color = 'var(--color-danger-500)',
+  ...props
+}: Partial<IconProps>) {
   return (
     <svg
       xmlns='http://www.w3.org/2000/svg'
@@ -19,4 +23,4 @@ export const DangerIcon = ({ size = 24, color = 'var(--color-danger-500)', ...pr
       <line x1='12' y1='16' x2='12.01' y2='16'></line>
     </svg>
   );
-};
+}

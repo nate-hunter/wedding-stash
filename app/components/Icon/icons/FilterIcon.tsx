@@ -1,10 +1,8 @@
 import { type IconProps } from '../+types';
 
-export const FilterIcon = ({ size = 24, strokeWidth = 2, ...props }: Partial<IconProps>) => {
+export function FilterIcon({ size = 24, strokeWidth = 2, ...props }: Partial<IconProps>) {
   return (
     <svg
-      // fill='red'
-      // stroke='red'
       fill='none'
       stroke='currentColor'
       strokeWidth={strokeWidth}
@@ -19,4 +17,4 @@ export const FilterIcon = ({ size = 24, strokeWidth = 2, ...props }: Partial<Ico
       <polygon points='22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3'></polygon>
     </svg>
   );
-};
+}

@@ -1,8 +1,15 @@
 import { type IconProps } from '../+types';
 
-export const ExcelIcon = ({ size = 28, ...props }: Partial<IconProps>) => {
+export function ExcelIcon({ size = 28, ...props }: Partial<IconProps>) {
   return (
-    <svg width={size} height={size} viewBox='0 0 28 28' fill='none' xmlns='http://www.w3.org/2000/svg' {...props}>
+    <svg
+      width={size}
+      height={size}
+      viewBox='0 0 28 28'
+      fill='none'
+      xmlns='http://www.w3.org/2000/svg'
+      {...props}
+    >
       <path d='M25.6668 8.75H16.3335V14H25.6668V8.75Z' fill='#21A366' />
       <path
         d='M25.6667 14H7V23.3333C7 23.9779 7.52208 24.5 8.16667 24.5H24.5C25.1446 24.5 25.6667 23.9779 25.6667 23.3333V14Z'
@@ -10,8 +17,14 @@ export const ExcelIcon = ({ size = 28, ...props }: Partial<IconProps>) => {
       />
       <path d='M25.6668 14H16.3335V19.25H25.6668V14Z' fill='#107C42' />
       <path d='M16.3333 8.75H7V14H16.3333V8.75Z' fill='#3FA071' />
-      <path d='M24.5002 3.5H16.3335V8.75H25.6668V4.66667C25.6668 4.02208 25.1447 3.5 24.5002 3.5Z' fill='#33C481' />
-      <path d='M8.16667 3.5H16.3333V8.75H7V4.66667C7 4.02208 7.52208 3.5 8.16667 3.5Z' fill='#21A366' />
+      <path
+        d='M24.5002 3.5H16.3335V8.75H25.6668V4.66667C25.6668 4.02208 25.1447 3.5 24.5002 3.5Z'
+        fill='#33C481'
+      />
+      <path
+        d='M8.16667 3.5H16.3333V8.75H7V4.66667C7 4.02208 7.52208 3.5 8.16667 3.5Z'
+        fill='#21A366'
+      />
       <path
         opacity='0.05'
         d='M13.0194 7.58337H7V21.5834H13.0194C14.2053 21.5834 15.1667 20.622 15.1667 19.4361V9.73062C15.1667 8.54471 14.2053 7.58337 13.0194 7.58337Z'
@@ -50,4 +63,4 @@ export const ExcelIcon = ({ size = 28, ...props }: Partial<IconProps>) => {
       </defs>
     </svg>
   );
-};
+}
