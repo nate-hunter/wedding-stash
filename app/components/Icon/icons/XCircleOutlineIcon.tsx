@@ -1,6 +1,10 @@
 import { type IconProps } from '../+types';
 
-export const XCircleOutlineIcon = ({ size = '200px', strokeWidth = 2, ...props }: Partial<IconProps>) => {
+export function XCircleOutlineIcon({
+  size = '200px',
+  strokeWidth = 2,
+  ...props
+}: Partial<IconProps>) {
   return (
     <svg
       xmlns='http://www.w3.org/2000/svg'
@@ -22,4 +26,4 @@ export const XCircleOutlineIcon = ({ size = '200px', strokeWidth = 2, ...props }
       ></path>
     </svg>
   );
-};
+}

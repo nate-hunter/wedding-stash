@@ -1,6 +1,6 @@
 import { type IconProps } from '../+types';
 
-export const CloseIcon = ({ size = 24, color = 'currentColor', ...props }: Partial<IconProps>) => {
+export function CloseIcon({ size = 24, color = 'currentColor', ...props }: Partial<IconProps>) {
   return (
     <svg
       xmlns='http://www.w3.org/2000/svg'
@@ -18,4 +18,4 @@ export const CloseIcon = ({ size = 24, color = 'currentColor', ...props }: Parti
       <line x1='6' y1='6' x2='18' y2='18'></line>
     </svg>
   );
-};
+}

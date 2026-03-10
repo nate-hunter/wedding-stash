@@ -1,6 +1,6 @@
 import { type IconProps } from '../+types';
 
-export const CheckIcon = ({ size = 16, strokeWidth = 0, ...props }: Partial<IconProps>) => {
+export function CheckIcon({ size = 16, strokeWidth = 0, ...props }: Partial<IconProps>) {
   return (
     <svg
       xmlns='http://www.w3.org/2000/svg'
@@ -20,4 +20,4 @@ export const CheckIcon = ({ size = 16, strokeWidth = 0, ...props }: Partial<Icon
       ></path>
     </svg>
   );
-};
+}

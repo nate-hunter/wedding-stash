@@ -1,6 +1,6 @@
 import { type IconProps } from '../+types';
 
-export const ArrowTopRightIcon = ({ size = 24, strokeWidth = 0, ...props }: Partial<IconProps>) => {
+export function ArrowTopRightIcon({ size = 24, strokeWidth = 0, ...props }: Partial<IconProps>) {
   return (
     <svg
       stroke='currentColor'
@@ -19,4 +19,4 @@ export const ArrowTopRightIcon = ({ size = 24, strokeWidth = 0, ...props }: Part
       ></path>
     </svg>
   );
-};
+}

@@ -1,23 +1,16 @@
 import { createClient } from '@/utils/supabase/server';
 
-import RootPage from './(root)/RootPage';
+import HomePage from './(root)/HomePage';
 
-export default async function HomePage() {
+export default async function HomePageWrapper() {
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  return (
-    <div className='min-h-screen surface-bg'>
-      <div className='text-center'>
-        <h1 className='text-banner'>Wedding Memories</h1>
-      </div>
+  console.log('# PAGE #', { user });
 
-      <div className='max-w-4xl mx-auto p-8'>
-        <RootPage user={user} />
-      </div>
-    </div>
-  );
+  return <HomePage />;
 }
+

@@ -1,6 +1,6 @@
 import { type IconProps } from '../+types';
 
-export const GridIcon = ({ size = 24, strokeWidth = 2, ...props }: Partial<IconProps>) => {
+export function GridIcon({ size = 24, strokeWidth = 2, ...props }: Partial<IconProps>) {
   return (
     <svg
       stroke='currentColor'
@@ -20,4 +20,4 @@ export const GridIcon = ({ size = 24, strokeWidth = 2, ...props }: Partial<IconP
       <rect x='3' y='14' width='7' height='7'></rect>
     </svg>
   );
-};
+}

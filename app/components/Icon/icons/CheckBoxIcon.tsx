@@ -1,6 +1,6 @@
 import { type IconProps } from '../+types';
 
-export const CheckBoxIcon = ({ size = 24, ...props }: Partial<IconProps>) => {
+export function CheckBoxIcon({ size = 24, ...props }: Partial<IconProps>) {
   return (
     <svg
       xmlns='http://www.w3.org/2000/svg'
@@ -18,4 +18,4 @@ export const CheckBoxIcon = ({ size = 24, ...props }: Partial<IconProps>) => {
       <path d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'></path>
     </svg>
   );
-};
+}

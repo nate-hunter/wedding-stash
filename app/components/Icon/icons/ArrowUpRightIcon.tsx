@@ -1,6 +1,6 @@
 import { type IconProps } from '../+types';
 
-export const ArrowUpRightIcon = ({ size = 24, strokeWidth = 2, ...props }: Partial<IconProps>) => {
+export function ArrowUpRightIcon({ size = 24, strokeWidth = 2, ...props }: Partial<IconProps>) {
   return (
     <svg
       xmlns='http://www.w3.org/2000/svg'
@@ -18,4 +18,4 @@ export const ArrowUpRightIcon = ({ size = 24, strokeWidth = 2, ...props }: Parti
       <polyline points='7 7 17 7 17 17'></polyline>
     </svg>
   );
-};
+}

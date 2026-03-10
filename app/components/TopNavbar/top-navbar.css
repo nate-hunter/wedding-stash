@@ -1,3 +1,9 @@
+/*
+Currently this component is configured for testing
+
+TODO: Clean up once app features implememnted.
+*/
+
 /* ------------------------------ Navigation - Swiss Design ------------------------------ */
 .nav-bar {
   /* height: 64px; */
@@ -16,7 +22,7 @@
   border-bottom: 1px solid var(--color-primary-100);
   /* border-bottom: 1px solid var(--color-primary-200); */
   /* border-bottom: 1px solid var(--color-border); */
-  z-index: 9999;
+  z-index: 99;
 }
 
 .nav-brand {

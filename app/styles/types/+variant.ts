@@ -1,5 +1,6 @@
 export type SemanticVariant =
   | 'default'
+  | 'cta'
   | 'primary'
   | 'secondary'
   | 'success'
